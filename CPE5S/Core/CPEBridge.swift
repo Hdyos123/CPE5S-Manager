@@ -85,7 +85,11 @@ final class CPEBridge: NSObject, ObservableObject {
         set { UserDefaults.standard.set(newValue, forKey: "cpe.user") }
     }
     var baseURL: String { "http://\(host)" }
+    /// Persisted password (only when "记住密码" is on).
     @AppStorage("cpe.password") var password: String = ""
+    /// In-memory password used for session re-auth; survives even when the
+    /// user opted out of remembering it.
+    var sessionSecret: String = ""
 
     @Published var sessionReady = false
     @Published var lastError: String?
@@ -112,15 +116,27 @@ final class CPEBridge: NSObject, ObservableObject {
     @discardableResult
     func signIn(host: String, user: String, password: String,
                 remember: Bool, autoLogin: Bool) async -> Bool {
-        self.host = host.trimmingCharacters(in: .whitespaces)
-        self.user = user.trimmingCharacters(in: .whitespaces)
-        self.password = remember ? password : ""
+        let trimmedHost = host.trimmingCharacters(in: .whitespaces)
+        let trimmedUser = user.trimmingCharacters(in: .whitespaces)
+        self.host = trimmedHost.isEmpty ? Self.defaultHost : trimmedHost
+        self.user = trimmedUser.isEmpty ? Self.defaultUser : trimmedUser
+
+        // Keep the password in memory for this attempt regardless of `remember`;
+        // only decide about persistence after the login succeeds.
+        self.sessionSecret = password
+        if remember { self.password = password }
         UserDefaults.standard.set(remember, forKey: "cpe.remember")
         UserDefaults.standard.set(autoLogin, forKey: "cpe.autoLogin")
+
         sessionReady = false
         lastError = nil
-        // Force a fresh page load for the (possibly new) host before logging in.
         await boot(force: true)
+
+        if sessionReady && !remember {
+            // Keep sessionSecret in memory so auto re-auth still works this run.
+            UserDefaults.standard.removeObject(forKey: "cpe.password")
+            self.password = ""
+        }
         isLoggedIn = sessionReady
         return sessionReady
     }
@@ -214,6 +230,10 @@ final class CPEBridge: NSObject, ObservableObject {
             lastError = nil
             return
         }
+        if sessionSecret.isEmpty && password.isEmpty {
+            lastError = "请先输入密码"
+            return
+        }
         await performLogin()
     }
 
@@ -251,11 +271,15 @@ final class CPEBridge: NSObject, ObservableObject {
     }
 
     private func performLogin() async {
-        guard !password.isEmpty else {
-            lastError = "未设置登录密码"; return
+        let secret = sessionSecret.isEmpty ? password : sessionSecret
+        guard !secret.isEmpty else {
+            lastError = "请先输入密码"; return
         }
-        let js = Self.loginJS(password: password, user: user)
-        guard let res = try? await evalDict(js) else {
+        // Pass credentials through `arguments` — the body is wrapped in a
+        // function by callAsyncJavaScript, so string interpolation is unsafe.
+        guard let res = try? await runAsync(
+                Self.loginBody,
+                arguments: ["pwd": secret, "usr": user, "cbName": "cpe5s"]) as? [String: Any] else {
             lastError = "登录脚本执行失败"; return
         }
         let ok = (res["ok"] as? Bool) ?? false
@@ -264,12 +288,8 @@ final class CPEBridge: NSObject, ObservableObject {
             let stage = (res["stage"] as? String) ?? ""
             let code = (res["code"] as? String) ?? stage
             var msg = Self.loginMessage(code.isEmpty ? stage : code)
-            if let raw = res["raw"] as? String, !raw.isEmpty {
-                msg += " · \(raw.prefix(60))"
-            }
-            if stage == "noforge" {
-                let ua = await debugUserAgent()
-                msg += " · \(ua.prefix(40))"
+            if let err = res["err"] as? String, !err.isEmpty {
+                msg += " · \(err.prefix(70))"
             }
             lastError = msg
         } else {
@@ -350,10 +370,11 @@ final class CPEBridge: NSObject, ObservableObject {
     /// Run an async JS expression and bridge the resolved value back to Swift.
     /// `callAsyncJavaScript` understands `await` and unwraps the returned promise;
     /// `evaluateJavaScript` does not (it hands back an opaque Promise object).
-    private func runAsync(_ body: String) async throws -> Any? {
+    private func runAsync(_ body: String,
+                          arguments: [String: Any] = [:]) async throws -> Any? {
         try await withCheckedThrowingContinuation { (c: CheckedContinuation<Any?, Error>) in
             webView.callAsyncJavaScript(body,
-                                        arguments: [:],
+                                        arguments: arguments,
                                         in: nil,
                                         in: .page) { result in
                 switch result {
@@ -382,51 +403,72 @@ final class CPEBridge: NSObject, ObservableObject {
 
     // MARK: Login JS (mirrors the firmware's own forge.js exactly)
 
-    static func loginJS(password: String, user: String) -> String {
-        let pw = password
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-        return """
-        const pwd = "\(pw)";
-        const r=(e,t,n)=>forge.util.bytesToHex(forge.pbkdf2(e,t,n,32,"sha256"));
-        const A=(e,t)=>{var n=forge.hmac.create();n.start("sha256",t);n.update(forge.util.hexToBytes(e));return n.digest().toHex();};
-        const IK=e=>A(e,"Client Key");
-        const C=e=>{var t=forge.md.sha256.create();t.update(forge.util.hexToBytes(e));return t.digest().toHex();};
-        const U=(e,t,n,o)=>{var a=r(e,t,n),s=IK(a),uu=C(s),l=A(uu,o),p=forge.util.hexToBytes(s),f=forge.util.hexToBytes(l);return forge.util.bytesToHex(forge.util.xorBytes(p,f,p.length));};
-        const tok=async()=>{const x=await fetch("/api/webserver/token",{credentials:"include"}).then(r=>r.text());
-          const m=x.match(/<token>(.*?)<\\/token>/s); let t=m?m[1]:"";
-          t=t.replace(/&#x2F;/g,"/").replace(/&#x2B;/g,"+").replace(/&#x3D;/g,"=");
-          return t.length>32?t.substr(32):t;};
-        const G=(x,k)=>{const m=x.match(new RegExp("<"+k+">(.*?)</"+k+">","s"));return m?m[1]:null;};
+    /// Login body executed inside the page. Credentials arrive via `arguments`
+    /// so no string interpolation happens (avoids quoting / scope issues).
+    static let loginBody = """
+    try {
+      // forge.js ships with the web UI; wait briefly if not parsed yet.
+      for (let i = 0; i < 40 && typeof forge === "undefined"; i++) {
+        await new Promise(r => setTimeout(r, 100));
+      }
+      if (typeof forge === "undefined") return {ok:false, stage:"noforge"};
 
-        // forge.js ships with the web UI; wait briefly if it hasn't parsed yet.
-        for (let i = 0; i < 40 && typeof forge === "undefined"; i++) {
-          await new Promise(r => setTimeout(r, 100));
-        }
-        if (typeof forge === "undefined") return {ok:false, stage:"noforge"};
-        let t = await tok();
-        const st0 = await fetch("/api/user/state-login",{credentials:"include",headers:{"__RequestVerificationToken":t}}).then(x=>x.text());
-        if (G(st0,"State") === "0") return {ok:true, already:true};
+      const r = (e,t,n) => forge.util.bytesToHex(forge.pbkdf2(e,t,n,32,"sha256"));
+      const A = (e,t) => { const m = forge.hmac.create(); m.start("sha256", t); m.update(forge.util.hexToBytes(e)); return m.digest().toHex(); };
+      const IK = e => A(e, "Client Key");
+      const SH = e => { const m = forge.md.sha256.create(); m.update(forge.util.hexToBytes(e)); return m.digest().toHex(); };
+      const MK = (e,t,n,o) => {
+        const a = r(e,t,n), s = IK(a), u = SH(s), l = A(u,o);
+        const p = forge.util.hexToBytes(s), f = forge.util.hexToBytes(l);
+        return forge.util.bytesToHex(forge.util.xorBytes(p,f,p.length));
+      };
+      const tok = async () => {
+        const x = await fetch("/api/webserver/token", {credentials:"include"}).then(r => r.text());
+        const m = x.match(new RegExp("<token>([\\s\\S]*?)<\\/token>"));
+        let t = m ? m[1] : "";
+        t = t.replace(/&#x2F;/g,"/").replace(/&#x2B;/g,"+").replace(/&#x3D;/g,"=");
+        return t.length > 32 ? t.substr(32) : t;
+      };
+      const G = (x,k) => {
+        const m = x.match(new RegExp("<" + k + ">([\\s\\S]*?)<\\/" + k + ">"));
+        return m ? m[1] : null;
+      };
 
-        const fn = forge.util.bytesToHex(forge.random.getBytesSync(32));
-        let cr = await fetch("/api/user/challenge_login",{method:"POST",credentials:"include",
-          headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8","__RequestVerificationToken":t},
-          body:"<request><username>\(user)</username><firstnonce>"+fn+"</firstnonce><mode>1</mode></request>"}).then(x=>x.text());
-        const salt=G(cr,"salt"), iters=G(cr,"iterations"), srv=G(cr,"servernonce");
-        if (!salt) return {ok:false, stage:"challenge", code:G(cr,"code"), raw:cr.slice(0,160)};
+      let t = await tok();
+      const st0 = await fetch("/api/user/state-login", {credentials:"include",
+        headers:{"__RequestVerificationToken": t}}).then(x => x.text());
+      if (G(st0,"State") === "0") return {ok:true, already:true};
+      if (G(st0,"lockstatus") && G(st0,"lockstatus") !== "0") {
+        return {ok:false, stage:"locked", code:"108007", err:"剩余 " + G(st0,"remainwaittime") + " 分钟"};
+      }
 
-        const am = fn+","+srv+","+srv;
-        const proof = U(pwd, forge.util.hexToBytes(salt), +iters, am);
-        t = await tok();
-        const ar = await fetch("/api/user/authentication_login",{method:"POST",credentials:"include",
-          headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8","__RequestVerificationToken":t},
-          body:"<request><clientproof>"+proof+"</clientproof><finalnonce>"+srv+"</finalnonce></request>"}).then(x=>x.text());
-        const st2 = await fetch("/api/user/state-login",{credentials:"include"}).then(x=>x.text());
-        const ok = G(st2,"State") === "0";
-        return {ok: ok, code: ok ? "" : (G(ar,"code") || "?"), level: G(st2,"userlevel")};
-        """
+      const fn = forge.util.bytesToHex(forge.random.getBytesSync(32));
+      const cr = await fetch("/api/user/challenge_login", {method:"POST", credentials:"include",
+        headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
+                 "__RequestVerificationToken": t},
+        body: "<request><username>" + usr + "</username><firstnonce>" + fn +
+              "</firstnonce><mode>1</mode></request>"}).then(x => x.text());
+
+      const salt = G(cr,"salt"), iters = G(cr,"iterations"), srv = G(cr,"servernonce");
+      if (!salt) return {ok:false, stage:"challenge", code:G(cr,"code"), err:cr.slice(0,120)};
+
+      const am = fn + "," + srv + "," + srv;
+      const proof = MK(pwd, forge.util.hexToBytes(salt), +iters, am);
+
+      t = await tok();
+      const ar = await fetch("/api/user/authentication_login", {method:"POST", credentials:"include",
+        headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
+                 "__RequestVerificationToken": t},
+        body: "<request><clientproof>" + proof + "</clientproof><finalnonce>" + srv +
+              "</finalnonce></request>"}).then(x => x.text());
+
+      const st2 = await fetch("/api/user/state-login", {credentials:"include"}).then(x => x.text());
+      const ok = G(st2,"State") === "0";
+      return {ok: ok, code: ok ? "" : (G(ar,"code") || "?"), level: G(st2,"userlevel")};
+    } catch (e) {
+      return {ok:false, stage:"exception", err: String(e)};
     }
-}
+    """
 
 enum CPEBridgeError: Error { case empty }
 

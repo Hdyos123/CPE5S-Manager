@@ -81,17 +81,19 @@ struct LoginView: View {
     private var formCard: some View {
         GlassCard(radius: 28, padding: 20) {
             VStack(spacing: 14) {
-                field(label: "网关地址", icon: "network",
-                      text: $host, placeholder: CPEBridge.defaultHost,
-                      keyboard: .URL, secure: false,
-                      toggle: nil)
+                inputRow(label: "网关地址", icon: "network",
+                         placeholder: CPEBridge.defaultHost,
+                         text: $host, keyboard: .URL)
 
-                field(label: "用户名", icon: "person",
-                      text: $user, placeholder: CPEBridge.defaultUser,
-                      keyboard: .default, secure: false,
-                      toggle: nil)
+                inputRow(label: "用户名", icon: "person",
+                         placeholder: CPEBridge.defaultUser,
+                         text: $user)
 
-                passiveField
+                inputRow(label: "密码", icon: "lock",
+                         placeholder: "请输入管理密码",
+                         text: $password,
+                         secure: true,
+                         reveal: $showPassword)
 
                 if let errorText {
                     HStack(spacing: 6) {
@@ -144,70 +146,47 @@ struct LoginView: View {
         }
     }
 
-    private func field(label: String, icon: String, text: Binding<String>,
-                       placeholder: String, keyboard: UIKeyboardType,
-                       secure: Bool, toggle: Binding<Bool>?) -> some View {
+    /// One labelled input row. `secure` switches to SecureField and shows the
+    /// reveal button; otherwise it is a plain TextField.
+    private func inputRow(label: String, icon: String,
+                          placeholder: String,
+                          text: Binding<String>,
+                          keyboard: UIKeyboardType = .default,
+                          secure: Bool = false,
+                          reveal: Binding<Bool>? = nil) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.42))
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.45))
                 .padding(.leading, 2)
+
             HStack(spacing: 9) {
                 Image(systemName: icon)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.white.opacity(0.4))
                     .frame(width: 18)
-                TextField("", text: text, prompt: Text(placeholder))
-                    .keyboardType(keyboard)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .font(.system(size: 14))
-                    .foregroundStyle(.white)
-            }
-            .padding(.horizontal, 13)
-            .padding(.vertical, 13)
-            .background {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Color.white.opacity(0.05))
-                    }
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(.white.opacity(0.12), lineWidth: 0.7)
-            }
-        }
-    }
 
-    private var passiveField: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("密码")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.42))
-                .padding(.leading, 2)
-            HStack(spacing: 9) {
-                Image(systemName: "lock")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.4))
-                    .frame(width: 18)
                 Group {
-                    if showPassword {
-                        TextField("", text: $password, prompt: Text("WebUI 管理密码"))
+                    if secure && !(reveal?.wrappedValue ?? false) {
+                        SecureField("", text: text, prompt: Text(placeholder))
                     } else {
-                        SecureField("", text: $password, prompt: Text("WebUI 管理密码"))
+                        TextField("", text: text, prompt: Text(placeholder))
                     }
                 }
+                .keyboardType(keyboard)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
+                .textContentType(secure ? .password : .username)
                 .font(.system(size: 14))
                 .foregroundStyle(.white)
 
-                Button { showPassword.toggle() } label: {
-                    Image(systemName: showPassword ? "eye.slash" : "eye")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.4))
+                if let reveal {
+                    Button { reveal.wrappedValue.toggle() } label: {
+                        Image(systemName: reveal.wrappedValue ? "eye.slash" : "eye")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 13)
