@@ -1,0 +1,60 @@
+name: Build IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: build-${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ macos-15, macos-14 ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+
+      - name: Show schemes
+        run: xcodebuild -list -project CPE5S.xcodeproj
+
+      - name: Build archive
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project CPE5S.xcodeproj \
+            -scheme CPE5S \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath "$RUNNER_TEMP/CPE5S.xcarchive" \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            | xcpretty || xcodebuild -version
+
+      - name: Package IPA
+        run: |
+          APP="$RUNNER_TEMP/CPE5S.xcarchive/Products/Applications/CPE5S.app"
+          if [ ! -d "$APP" ]; then
+            APP=$(find "$RUNNER_TEMP/CPE5S.xcarchive" -name "*.app" -maxdepth 5 | head -1)
+          fi
+          echo "APP=$APP"
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          zip -qry "CPE5S-${{ matrix.os }}.ipa" Payload
+          ls -lh "CPE5S-${{ matrix.os }}.ipa"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IPA-${{ matrix.os }}
+          path: ${{ runner.temp }}/CPE5S-${{ matrix.os }}.ipa
+          retention-days: 14

@@ -1,0 +1,294 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1000001 /* CPE5SApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000001 /* CPE5SApp.swift */; };
+		A1000002 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002 /* HomeView.swift */; };
+		A1000003 /* SMSView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000003 /* SMSView.swift */; };
+		A1000004 /* ControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000004 /* ControlView.swift */; };
+		A1000005 /* LockBandView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000005 /* LockBandView.swift */; };
+		A1000006 /* ParamsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000006 /* ParamsView.swift */; };
+		A1000007 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000007 /* SettingsView.swift */; };
+		A1000008 /* CPEBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000008 /* CPEBridge.swift */; };
+		A1000009 /* CPEModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000009 /* CPEModels.swift */; };
+		A1000010 /* GlassTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000010 /* GlassTheme.swift */; };
+		A1000011 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1000011 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B1000001 /* CPE5SApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPE5SApp.swift; sourceTree = "<group>"; };
+		B1000002 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		B1000003 /* SMSView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMSView.swift; sourceTree = "<group>"; };
+		B1000004 /* ControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlView.swift; sourceTree = "<group>"; };
+		B1000005 /* LockBandView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockBandView.swift; sourceTree = "<group>"; };
+		B1000006 /* ParamsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParamsView.swift; sourceTree = "<group>"; };
+		B1000007 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B1000008 /* CPEBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPEBridge.swift; sourceTree = "<group>"; };
+		B1000009 /* CPEModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPEModels.swift; sourceTree = "<group>"; };
+		B1000010 /* GlassTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassTheme.swift; sourceTree = "<group>"; };
+		B1000011 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B1000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B1000013 /* CPE5S.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CPE5S.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C1000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D1000001 = {
+			isa = PBXGroup;
+			children = (
+				D1000002 /* CPE5S */,
+				D1000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D1000002 /* CPE5S */ = {
+			isa = PBXGroup;
+			children = (
+				B1000001 /* CPE5SApp.swift */,
+				D1000004 /* Views */,
+				D1000005 /* Core */,
+				B1000011 /* Assets.xcassets */,
+				B1000012 /* Info.plist */,
+			);
+			path = CPE5S;
+			sourceTree = "<group>";
+		};
+		D1000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B1000013 /* CPE5S.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D1000004 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				B1000002 /* HomeView.swift */,
+				B1000003 /* SMSView.swift */,
+				B1000004 /* ControlView.swift */,
+				B1000005 /* LockBandView.swift */,
+				B1000006 /* ParamsView.swift */,
+				B1000007 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		D1000005 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				B1000008 /* CPEBridge.swift */,
+				B1000009 /* CPEModels.swift */,
+				B1000010 /* GlassTheme.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E1000001 /* CPE5S */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F1000001 /* Build configuration list for PBXNativeTarget "CPE5S" */;
+			buildPhases = (
+				C1000002 /* Sources */,
+				C1000001 /* Frameworks */,
+				C1000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CPE5S;
+			productName = CPE5S;
+			productReference = B1000013 /* CPE5S.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E1000002 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					E1000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = F1000002 /* Build configuration list for PBXProject "CPE5S" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D1000001;
+			productRefGroup = D1000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E1000001 /* CPE5S */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C1000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000011 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C1000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000001 /* CPE5SApp.swift in Sources */,
+				A1000002 /* HomeView.swift in Sources */,
+				A1000003 /* SMSView.swift in Sources */,
+				A1000004 /* ControlView.swift in Sources */,
+				A1000005 /* LockBandView.swift in Sources */,
+				A1000006 /* ParamsView.swift in Sources */,
+				A1000007 /* SettingsView.swift in Sources */,
+				A1000008 /* CPEBridge.swift in Sources */,
+				A1000009 /* CPEModels.swift in Sources */,
+				A1000010 /* GlassTheme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F1000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F1000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		F1000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CPE5S/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.huaweicpe.ultra;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F1000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CPE5S/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.huaweicpe.ultra;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F1000001 /* Build configuration list for PBXNativeTarget "CPE5S" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1000005 /* Debug */,
+				F1000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F1000002 /* Build configuration list for PBXProject "CPE5S" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1000003 /* Debug */,
+				F1000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E1000002 /* Project object */;
+}
