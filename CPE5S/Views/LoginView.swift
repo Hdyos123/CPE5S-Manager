@@ -44,7 +44,12 @@ struct LoginView: View {
             host = storedHost.isEmpty ? CPEBridge.defaultHost : storedHost
             user = storedUser.isEmpty ? CPEBridge.defaultUser : storedUser
             if remember { password = bridge.password }
-            Task { await autoLoginIfEnabled() }
+            // Warm up the hidden web view (page + session cookie + forge) while
+            // the user is still typing, so tapping 登录 is instant.
+            Task {
+                await bridge.prepare()
+                await autoLoginIfEnabled()
+            }
         }
     }
 

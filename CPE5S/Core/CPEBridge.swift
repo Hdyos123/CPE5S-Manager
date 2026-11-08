@@ -112,6 +112,17 @@ final class CPEBridge: NSObject, ObservableObject {
             : UserDefaults.standard.bool(forKey: "cpe.remember")
     }
 
+    /// Load the gateway page and establish a session without logging in.
+    /// Safe to call repeatedly; used to warm the hidden web view.
+    func prepare() async {
+        if sessionReady { return }
+        if !(await hasSessionCookie()) {
+            await loadLoginPage()
+        } else {
+            await waitForForge()
+        }
+    }
+
     /// Sign in with explicit credentials from the login screen.
     @discardableResult
     func signIn(host: String, user: String, password: String,
@@ -238,24 +249,50 @@ final class CPEBridge: NSObject, ObservableObject {
     }
 
     private func loadLoginPage() async {
-        // If the same host was already loaded, a plain reload keeps the existing
-        // session cookie and is much faster than a cold navigation.
+        // Always do a fresh navigation. A reload() can reuse a WebView whose
+        // session cookie was never (re)established, which makes every token
+        // come back "expired" (125003) on challenge_login.
         await withCheckedContinuation { (c: CheckedContinuation<Void, Never>) in
             bootContinuation = c
             let target = URL(string: baseURL + "/")!
-            if let cur = webView.url, cur.host == target.host {
-                webView.reload()
-            } else {
-                webView.load(URLRequest(url: target))
-            }
+            var req = URLRequest(url: target)
+            req.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+            req.timeoutInterval = 20
+            webView.load(req)
             // safety timeout
-            DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
                 self?.bootContinuation?.resume()
                 self?.bootContinuation = nil
             }
         }
         // Make sure the page's own forge.js is available before we touch it.
         await waitForForge()
+        // Confirm the gateway actually handed us a session cookie.
+        await ensureSessionCookie()
+    }
+
+    /// The firmware issues `SessionID` on the first GET /. Without it every
+    /// authenticated call answers 125003, so verify (and re-fetch if needed).
+    @discardableResult
+    private func ensureSessionCookie() async -> Bool {
+        for _ in 0..<3 {
+            let ok = await hasSessionCookie()
+            if ok { return true }
+            await withCheckedContinuation { (c: CheckedContinuation<Void, Never>) in
+                webView.load(URLRequest(url: URL(string: baseURL + "/")!))
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { c.resume() }
+            }
+        }
+        return await hasSessionCookie()
+    }
+
+    private func hasSessionCookie() async -> Bool {
+        await withCheckedContinuation { (c: CheckedContinuation<Bool, Never>) in
+            webView.configuration.websiteDataStore.httpCookieStore
+                .getAllCookies { cookies in
+                    c.resume(returning: cookies.contains { $0.name == "SessionID" && !$0.value.isEmpty })
+                }
+        }
     }
 
     /// Poll until `forge` exists in the page (the firmware's crypto bundle).
@@ -274,6 +311,10 @@ final class CPEBridge: NSObject, ObservableObject {
         let secret = sessionSecret.isEmpty ? password : sessionSecret
         guard !secret.isEmpty else {
             lastError = "请先输入密码"; return
+        }
+        if !(await hasSessionCookie()) {
+            lastError = "无法建立网关会话（Cookie 未下发），请确认手机已连接该设备"
+            return
         }
         // Pass credentials through `arguments` — the body is wrapped in a
         // function by callAsyncJavaScript, so string interpolation is unsafe.
@@ -302,7 +343,7 @@ final class CPEBridge: NSObject, ObservableObject {
         case "108006": return "密码错误"
         case "108007": return "错误次数超限，已被锁定，请稍后再试"
         case "108003": return "该账号已在其他地方登录"
-        case "125003": return "会话失效，请重试"
+        case "125003": return "会话令牌失效（请重试，或确认未在其他设备登录）"
         case "challenge": return "握手失败（设备未响应，请确认地址）"
         case "noforge": return "页面未加载完成（加密库缺失），请重试"
         case "nosalt": return "设备未返回密钥参数"
