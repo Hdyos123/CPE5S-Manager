@@ -25,9 +25,21 @@ enum Changelog {
 
     static let all: [ChangelogEntry] = [
         ChangelogEntry(
-            version: "1.1.1",
+            version: "1.1.2",
             date: "2026-11-08",
             isCurrent: true,
+            sections: [
+                ("会话修复（125003）", [
+                    "每次登录都重新加载网关页面，不再用 reload() 复用可能缺失 Cookie 的会话",
+                    "登录前校验 SessionID Cookie 是否已下发，缺失则自动重试三次",
+                    "页面打开时即预热隐藏 WebView（页面 + Cookie + forge.js），点登录即刻可用",
+                    "会话无法建立时给出明确提示，而不是笼统的「握手失败」"
+                ], "lock.shield.fill", .orange)
+            ]),
+        ChangelogEntry(
+            version: "1.1.1",
+            date: "2026-11-08",
+            isCurrent: false,
             sections: [
                 ("登录握手修复", [
                     "修正请求顺序：先查登录状态，再取令牌并「立即」发起握手，中间不再插入其他请求",
