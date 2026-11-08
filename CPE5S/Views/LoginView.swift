@@ -168,7 +168,11 @@ struct LoginView: View {
             .padding(.vertical, 13)
             .background {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(.white.opacity(0.06))
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.white.opacity(0.05))
+                    }
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -210,7 +214,11 @@ struct LoginView: View {
             .padding(.vertical, 13)
             .background {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(.white.opacity(0.06))
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.white.opacity(0.05))
+                    }
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)

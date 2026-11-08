@@ -75,7 +75,14 @@ struct SMSView: View {
                     segButton("发件箱", active: box == 2) { box = 2; Task { await load() } }
                 }
                 .padding(3)
-                .background(Capsule().fill(.white.opacity(0.07)))
+                .background {
+                    Capsule()
+                        .fill(.ultraThinMaterial)
+                        .overlay(Capsule().fill(Color.white.opacity(0.07)))
+                }
+                .overlay {
+                    Capsule().strokeBorder(Color.white.opacity(0.16), lineWidth: 0.7)
+                }
             }
         }
     }
@@ -223,6 +230,7 @@ struct SMSDetailView: View {
     var body: some View {
         ZStack {
             AuroraBackground()
+            Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
@@ -265,6 +273,7 @@ struct ComposeSMSView: View {
     var body: some View {
         ZStack {
             AuroraBackground()
+            Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
             VStack(spacing: 14) {
                 HStack {
                     Button("取消") { dismiss() }

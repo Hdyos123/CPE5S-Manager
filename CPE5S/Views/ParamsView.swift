@@ -67,7 +67,14 @@ struct ParamsView: View {
             }
         }
         .padding(3)
-        .background(Capsule().fill(.white.opacity(0.06)))
+        .background {
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay(Capsule().fill(Color.white.opacity(0.06)))
+        }
+        .overlay {
+            Capsule().strokeBorder(Color.white.opacity(0.16), lineWidth: 0.7)
+        }
     }
 
     private var deviceGroup: some View {

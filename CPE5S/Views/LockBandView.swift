@@ -84,7 +84,14 @@ struct LockBandView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
         .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.05))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.white.opacity(0.04)))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.6)
         }
     }
 
@@ -108,7 +115,13 @@ struct LockBandView: View {
                                 .padding(.vertical, 9)
                                 .background {
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(selectedBand == b.0 ? Color.cyan.opacity(0.22) : Color.white.opacity(0.05))
+                                        .fill(.ultraThinMaterial)
+                                        .overlay {
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .fill(selectedBand == b.0
+                                                      ? Color.cyan.opacity(0.22)
+                                                      : Color.white.opacity(0.04))
+                                        }
                                 }
                                 .overlay {
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)

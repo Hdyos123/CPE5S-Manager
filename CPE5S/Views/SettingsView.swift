@@ -88,7 +88,11 @@ struct SettingsView: View {
                     .padding(.vertical, 10)
                     .background {
                         RoundedRectangle(cornerRadius: 13, style: .continuous)
-                            .fill(.white.opacity(0.10))
+                            .fill(.ultraThinMaterial)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                    .fill(Color.white.opacity(0.08))
+                            }
                     }
                     .overlay {
                         RoundedRectangle(cornerRadius: 13, style: .continuous)
@@ -129,7 +133,11 @@ struct SettingsView: View {
                 .padding(12)
                 .background {
                     RoundedRectangle(cornerRadius: 13, style: .continuous)
-                        .fill(.white.opacity(0.06))
+                        .fill(.ultraThinMaterial)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                .fill(Color.white.opacity(0.05))
+                        }
                 }
                 .overlay {
                     RoundedRectangle(cornerRadius: 13, style: .continuous)
