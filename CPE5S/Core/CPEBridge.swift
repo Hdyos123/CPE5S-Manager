@@ -434,20 +434,33 @@ final class CPEBridge: NSObject, ObservableObject {
         return m ? m[1] : null;
       };
 
-      let t = await tok();
-      const st0 = await fetch("/api/user/state-login", {credentials:"include",
-        headers:{"__RequestVerificationToken": t}}).then(x => x.text());
+      // 1) session check (no token needed)
+      const st0 = await fetch("/api/user/state-login", {credentials:"include"}).then(x => x.text());
       if (G(st0,"State") === "0") return {ok:true, already:true};
       if (G(st0,"lockstatus") && G(st0,"lockstatus") !== "0") {
         return {ok:false, stage:"locked", code:"108007", err:"剩余 " + G(st0,"remainwaittime") + " 分钟"};
       }
 
+      // 2) grab a fresh token IMMEDIATELY before the handshake — the firmware
+      //    invalidates it as soon as any other request intervenes.
+      let t = await tok();
       const fn = forge.util.bytesToHex(forge.random.getBytesSync(32));
-      const cr = await fetch("/api/user/challenge_login", {method:"POST", credentials:"include",
+      let cr = await fetch("/api/user/challenge_login", {method:"POST", credentials:"include",
         headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
                  "__RequestVerificationToken": t},
         body: "<request><username>" + usr + "</username><firstnonce>" + fn +
               "</firstnonce><mode>1</mode></request>"}).then(x => x.text());
+
+      // 3) token races are common on this firmware: refresh and retry once.
+      if (cr.indexOf("125003") >= 0) {
+        await new Promise(r => setTimeout(r, 400));
+        t = await tok();
+        cr = await fetch("/api/user/challenge_login", {method:"POST", credentials:"include",
+          headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
+                   "__RequestVerificationToken": t},
+          body: "<request><username>" + usr + "</username><firstnonce>" + fn +
+                "</firstnonce><mode>1</mode></request>"}).then(x => x.text());
+      }
 
       const salt = G(cr,"salt"), iters = G(cr,"iterations"), srv = G(cr,"servernonce");
       if (!salt) return {ok:false, stage:"challenge", code:G(cr,"code"), err:cr.slice(0,120)};
