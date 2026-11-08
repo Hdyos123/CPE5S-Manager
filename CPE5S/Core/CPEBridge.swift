@@ -218,14 +218,35 @@ final class CPEBridge: NSObject, ObservableObject {
     }
 
     private func loadLoginPage() async {
+        // If the same host was already loaded, a plain reload keeps the existing
+        // session cookie and is much faster than a cold navigation.
         await withCheckedContinuation { (c: CheckedContinuation<Void, Never>) in
             bootContinuation = c
-            webView.load(URLRequest(url: URL(string: baseURL + "/")!))
+            let target = URL(string: baseURL + "/")!
+            if let cur = webView.url, cur.host == target.host {
+                webView.reload()
+            } else {
+                webView.load(URLRequest(url: target))
+            }
             // safety timeout
-            DispatchQueue.main.asyncAfter(deadline: .now() + 12) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
                 self?.bootContinuation?.resume()
                 self?.bootContinuation = nil
             }
+        }
+        // Make sure the page's own forge.js is available before we touch it.
+        await waitForForge()
+    }
+
+    /// Poll until `forge` exists in the page (the firmware's crypto bundle).
+    private func waitForForge(timeout: TimeInterval = 8) async {
+        let deadline = Date().addingTimeInterval(timeout)
+        let probe = "return typeof forge !== 'undefined' && typeof forge.pbkdf2 === 'function';"
+        while Date() < deadline {
+            if let v = try? await runAsync(probe), let ok = v as? Bool, ok {
+                return
+            }
+            try? await Task.sleep(nanoseconds: 250_000_000)
         }
     }
 
@@ -240,8 +261,17 @@ final class CPEBridge: NSObject, ObservableObject {
         let ok = (res["ok"] as? Bool) ?? false
         sessionReady = ok
         if !ok {
-            let code = (res["code"] as? String) ?? (res["stage"] as? String) ?? "?"
-            lastError = Self.loginMessage(code)
+            let stage = (res["stage"] as? String) ?? ""
+            let code = (res["code"] as? String) ?? stage
+            var msg = Self.loginMessage(code.isEmpty ? stage : code)
+            if let raw = res["raw"] as? String, !raw.isEmpty {
+                msg += " · \(raw.prefix(60))"
+            }
+            if stage == "noforge" {
+                let ua = await debugUserAgent()
+                msg += " · \(ua.prefix(40))"
+            }
+            lastError = msg
         } else {
             lastError = nil
         }
@@ -253,7 +283,9 @@ final class CPEBridge: NSObject, ObservableObject {
         case "108007": return "错误次数超限，已被锁定，请稍后再试"
         case "108003": return "该账号已在其他地方登录"
         case "125003": return "会话失效，请重试"
-        case "challenge": return "握手失败（设备未响应）"
+        case "challenge": return "握手失败（设备未响应，请确认地址）"
+        case "noforge": return "页面未加载完成（加密库缺失），请重试"
+        case "nosalt": return "设备未返回密钥参数"
         default: return "登录失败（\(code)）"
         }
     }
@@ -263,12 +295,10 @@ final class CPEBridge: NSObject, ObservableObject {
     func call(_ path: String) async throws -> CPEXML {
         if !sessionReady { await boot() }
         let js = """
-        (async () => {
           try {
             const r = await fetch("\(path)", {credentials:"include"});
             return await r.text();
           } catch (e) { return "__JSERR__" + e; }
-        })()
         """
         var text = ""
         for _ in 0..<2 {
@@ -296,7 +326,6 @@ final class CPEBridge: NSObject, ObservableObject {
             .replacingOccurrences(of: "\"", with: "\\\"")
             .replacingOccurrences(of: "\n", with: "")
         let js = """
-        (async () => {
           try {
             const tok = await (await fetch("/api/webserver/token",{credentials:"include"})).text();
             const m = tok.match(/<token>(.*?)<\\/token>/s);
@@ -311,7 +340,6 @@ final class CPEBridge: NSObject, ObservableObject {
             });
             return await r.text();
           } catch(e) { return "__JSERR__" + e; }
-        })()
         """
         guard let text = try? await evalString(js), !text.isEmpty else { return nil }
         return CPEXML(raw: text, isError: text.contains("<error>"))
@@ -319,23 +347,37 @@ final class CPEBridge: NSObject, ObservableObject {
 
     // MARK: JS helpers
 
-    private func evalString(_ js: String) async throws -> String {
-        try await withCheckedThrowingContinuation { (c: CheckedContinuation<String, Error>) in
-            webView.evaluateJavaScript(js) { result, err in
-                if let err = err { c.resume(throwing: err); return }
-                if let s = result as? String { c.resume(returning: s); return }
-                c.resume(returning: result.map { "\($0)" } ?? "")
+    /// Run an async JS expression and bridge the resolved value back to Swift.
+    /// `callAsyncJavaScript` understands `await` and unwraps the returned promise;
+    /// `evaluateJavaScript` does not (it hands back an opaque Promise object).
+    private func runAsync(_ body: String) async throws -> Any? {
+        try await withCheckedThrowingContinuation { (c: CheckedContinuation<Any?, Error>) in
+            webView.callAsyncJavaScript(body,
+                                        arguments: [:],
+                                        in: nil,
+                                        in: .page) { result in
+                switch result {
+                case .failure(let err):
+                    c.resume(throwing: err)
+                case .success(let value):
+                    c.resume(returning: value)
+                }
             }
         }
     }
 
+    private func evalString(_ js: String) async throws -> String {
+        let v = try await runAsync("return String(await (async () => { \(js) })());")
+        if let s = v as? String { return s }
+        if let s = v as? NSString { return s as String }
+        return v.map { "\($0)" } ?? ""
+    }
+
     private func evalDict(_ js: String) async throws -> [String: Any]? {
-        try await withCheckedThrowingContinuation { (c: CheckedContinuation<[String: Any]?, Error>) in
-            webView.evaluateJavaScript("(async () => { return await (async () => { \(js) })(); })()") { result, err in
-                if let err = err { c.resume(throwing: err); return }
-                c.resume(returning: result as? [String: Any])
-            }
-        }
+        let v = try await runAsync("return await (async () => { \(js) })();")
+        if let d = v as? [String: Any] { return d }
+        if let d = v as? NSDictionary { return d as? [String: Any] }
+        return nil
     }
 
     // MARK: Login JS (mirrors the firmware's own forge.js exactly)
@@ -357,6 +399,10 @@ final class CPEBridge: NSObject, ObservableObject {
           return t.length>32?t.substr(32):t;};
         const G=(x,k)=>{const m=x.match(new RegExp("<"+k+">(.*?)</"+k+">","s"));return m?m[1]:null;};
 
+        // forge.js ships with the web UI; wait briefly if it hasn't parsed yet.
+        for (let i = 0; i < 40 && typeof forge === "undefined"; i++) {
+          await new Promise(r => setTimeout(r, 100));
+        }
         if (typeof forge === "undefined") return {ok:false, stage:"noforge"};
         let t = await tok();
         const st0 = await fetch("/api/user/state-login",{credentials:"include",headers:{"__RequestVerificationToken":t}}).then(x=>x.text());
