@@ -25,9 +25,21 @@ enum Changelog {
 
     static let all: [ChangelogEntry] = [
         ChangelogEntry(
-            version: "1.1.0",
+            version: "1.1.1",
             date: "2026-11-08",
             isCurrent: true,
+            sections: [
+                ("登录握手修复", [
+                    "修正请求顺序：先查登录状态，再取令牌并「立即」发起握手，中间不再插入其他请求",
+                    "该固件会在任意请求后使令牌失效，这是上次报 125003 的原因",
+                    "握手返回 125003 时自动刷新令牌重试一次",
+                    "已用真实网关验证：一次即可拿到 salt 并完成登录"
+                ], "bolt.fill", .orange)
+            ]),
+        ChangelogEntry(
+            version: "1.1.0",
+            date: "2026-11-08",
+            isCurrent: false,
             sections: [
                 ("登录修复", [
                     "改用 callAsyncJavaScript 执行登录脚本（evaluateJavaScript 不支持 async/await，此前只会拿到 Promise 对象）",
