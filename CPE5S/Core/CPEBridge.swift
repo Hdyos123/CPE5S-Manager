@@ -469,6 +469,7 @@ final class CPEBridge: NSObject, ObservableObject {
       return {ok:false, stage:"exception", err: String(e)};
     }
     """
+}
 
 enum CPEBridgeError: Error { case empty }
 
