@@ -15,6 +15,7 @@ struct SettingsView: View {
     }
 
     @EnvironmentObject var store: CPEStore
+    @EnvironmentObject var updater: UpdateManager
     @AppStorage("cpe.password") private var password = ""
     @AppStorage("cpe.refresh") private var refreshInterval: Double = 1.0
     @State private var draftPassword = ""
@@ -22,6 +23,7 @@ struct SettingsView: View {
     @State private var reconnecting = false
     @State private var message: String?
     @State private var showingChangelog = false
+    @State private var showingUpdate = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -36,7 +38,17 @@ struct SettingsView: View {
             .padding(.horizontal, 16)
             .padding(.top, 8)
         }
-        .onAppear { draftPassword = password }
+        .onAppear {
+            draftPassword = password
+            Task { await updater.check(silent: true) }
+        }
+        .sheet(isPresented: $showingUpdate) {
+            UpdateSheet()
+                .environmentObject(updater)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .onAppear { Task { await updater.check() } }
+        }
         .sheet(isPresented: $showingChangelog) {
             ChangelogView()
                 .presentationDetents([.large])
@@ -315,6 +327,31 @@ struct SettingsView: View {
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.white.opacity(0.7))
                 }
+                Button { showingUpdate = true } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(updater.hasUpdate ? "发现新版本 v\(updater.latest?.version ?? "")" : "检查更新")
+                            .font(.system(size: 10, weight: .semibold))
+                        Spacer()
+                        if updater.hasUpdate {
+                            Circle().fill(.green).frame(width: 6, height: 6)
+                        }
+                        Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundStyle(updater.hasUpdate ? .green : .white.opacity(0.65))
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
+                    .background {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(.ultraThinMaterial)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill((updater.hasUpdate ? Color.green : Color.white).opacity(0.08))
+                            }
+                    }
+                }
+                .buttonStyle(.plain)
             }
         }
     }

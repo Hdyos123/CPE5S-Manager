@@ -9,12 +9,14 @@ import UIKit
 @main
 struct CPE5SApp: App {
     @StateObject private var store = CPEStore()
+    @StateObject private var updater = UpdateManager()
     @AppStorage("cpe.refresh") private var refreshInterval: Double = 1.0
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(store)
+                .environmentObject(updater)
                 .preferredColorScheme(.dark)
                 .onAppear {
                     // LoginView drives sign-in (auto or manual); polling starts after it succeeds.

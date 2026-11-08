@@ -2,15 +2,15 @@ name: Build IPA
 
 on:
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Publish a GitHub release'
+        type: boolean
+        default: false
 
 jobs:
   build:
-    name: build-${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ macos-15, macos-14 ]
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -19,61 +19,132 @@ jobs:
           sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
 
+      - name: Read version
+        id: ver
+        run: |
+          V=$(grep -m1 'MARKETING_VERSION = ' CPE5S.xcodeproj/project.pbxproj | sed 's/.*= \(.*\);/\1/')
+          B=$(grep -m1 'CURRENT_PROJECT_VERSION = ' CPE5S.xcodeproj/project.pbxproj | sed 's/.*= \(.*\);/\1/')
+          echo "version=$V" >> $GITHUB_OUTPUT
+          echo "build=$B" >> $GITHUB_OUTPUT
+          echo "v$V ($B)"
+
       - name: Validate project
         run: |
-          python3 - <<'EOF'
-          s = open('CPE5S.xcodeproj/project.pbxproj').read()
-          stack = []; in_str = False; esc = False
-          for ch in s:
-              if in_str:
-                  if esc: esc = False
-                  elif ch == '\\': esc = True
-                  elif ch == '"': in_str = False
-                  continue
-              if ch == '"': in_str = True
-              elif ch in '{(': stack.append(ch)
-              elif ch in '})':
-                  want = '{' if ch == '}' else '('
-                  assert stack and stack.pop() == want, 'unbalanced'
-          assert not stack, 'unclosed'
-          print('pbxproj OK')
-          EOF
+          python3 .github/validate_pbxproj.py
           xcodebuild -list -project CPE5S.xcodeproj
 
-      - name: Build archive
+      - name: Setup signing
+        if: ${{ secrets.BUILD_CERT_P12_BASE64 != '' }}
+        env:
+          CERT_B64: ${{ secrets.BUILD_CERT_P12_BASE64 }}
+          CERT_PASS: ${{ secrets.BUILD_CERT_PASSWORD }}
+          PROV_B64: ${{ secrets.BUILD_PROVISION_BASE64 }}
+          TEAM_ID: ${{ secrets.BUILD_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN=build.keychain
+          security create-keychain -p actions "$KEYCHAIN"
+          security default-keychain -s "$KEYCHAIN"
+          security unlock-keychain -p actions "$KEYCHAIN"
+          security set-keychain-settings -t 3600 -u "$KEYCHAIN"
+          echo "$CERT_B64" | base64 --decode > /tmp/cert.p12
+          security import /tmp/cert.p12 -k "$KEYCHAIN" -P "$CERT_PASS" -T /usr/bin/codesign -T /usr/bin/xcodebuild
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions "$KEYCHAIN"
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROV_B64" | base64 --decode > /tmp/profile.mobileprovision
+          cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          NAME=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract Name raw -)
+          echo "PROFILE_NAME=$NAME" >> $GITHUB_ENV
+          echo "TEAM_ID=$TEAM_ID" >> $GITHUB_ENV
+          echo "SIGNED=true" >> $GITHUB_ENV
+
+      - name: Build
         run: |
           set -o pipefail
-          xcodebuild archive \
+          if [ "${SIGNED:-false}" = "true" ]; then
+            SIGN="CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=Apple\ Distribution PROVISIONING_PROFILE_SPECIFIER=${PROFILE_NAME} DEVELOPMENT_TEAM=${TEAM_ID}"
+          else
+            SIGN="CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="
+          fi
+          eval xcodebuild archive \
             -project CPE5S.xcodeproj \
             -scheme CPE5S \
             -configuration Release \
             -sdk iphoneos \
-            -archivePath "$RUNNER_TEMP/CPE5S.xcarchive" \
-            -destination 'generic/platform=iOS' \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
+            -archivePath "\$RUNNER_TEMP/CPE5S.xcarchive" \
+            -destination "'generic/platform=iOS'" \
+            \$SIGN \
             COMPILER_INDEX_STORE_ENABLE=NO \
-            2>&1 | tee "$RUNNER_TEMP/build.log"
-          echo "---- error summary ----"
-          grep -E "error:|BUILD FAILED|ARCHIVE FAILED" "$RUNNER_TEMP/build.log" | head -30 || true
-          test -d "$RUNNER_TEMP/CPE5S.xcarchive"
+            2>&1 | tee "\$RUNNER_TEMP/build.log"
+          grep -E "error:|BUILD FAILED|ARCHIVE FAILED" "\$RUNNER_TEMP/build.log" | head -30 || true
+          test -d "\$RUNNER_TEMP/CPE5S.xcarchive"
 
       - name: Package IPA
         run: |
+          set -euo pipefail
           APP="$RUNNER_TEMP/CPE5S.xcarchive/Products/Applications/CPE5S.app"
           if [ ! -d "$APP" ]; then
             APP=$(find "$RUNNER_TEMP/CPE5S.xcarchive" -name "*.app" -maxdepth 5 | head -1)
           fi
-          echo "APP=$APP"
           mkdir -p "$RUNNER_TEMP/Payload"
           cp -R "$APP" "$RUNNER_TEMP/Payload/"
           cd "$RUNNER_TEMP"
-          zip -qry "CPE5S-${{ matrix.os }}.ipa" Payload
-          ls -lh "CPE5S-${{ matrix.os }}.ipa"
+          V="${{ steps.ver.outputs.version }}"
+          zip -qry "CPE5S-$V.ipa" Payload
+          ls -lh "CPE5S-$V.ipa"
+          echo "IPA_PATH=$RUNNER_TEMP/CPE5S-$V.ipa" >> $GITHUB_ENV
+
+      - name: Generate manifest
+        run: |
+          set -euo pipefail
+          V="${{ steps.ver.outputs.version }}"
+          URL="${{ github.server_url }}/${{ github.repository }}/releases/download/v$V/CPE5S-$V.ipa"
+          cat > "$RUNNER_TEMP/manifest.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+          <key>items</key>
+          <array>
+          <dict>
+          <key>assets</key>
+          <array>
+          <dict>
+          <key>kind</key><string>software-package</string>
+          <key>url</key><string>${URL}</string>
+          </dict>
+          </array>
+          <key>metadata</key>
+          <dict>
+          <key>bundle-identifier</key><string>com.huaweicpe.ultra</string>
+          <key>bundle-version</key><string>${V}</string>
+          <key>kind</key><string>software</string>
+          <key>title</key><string>华为CPE管理</string>
+          </dict>
+          </dict>
+          </array>
+          </dict>
+          </plist>
+          EOF
 
       - uses: actions/upload-artifact@v4
         with:
-          name: IPA-${{ matrix.os }}
-          path: ${{ runner.temp }}/CPE5S-${{ matrix.os }}.ipa
-          retention-days: 14
+          name: IPA-v${{ steps.ver.outputs.version }}
+          path: |
+            ${{ env.IPA_PATH }}
+            ${{ runner.temp }}/manifest.plist
+          retention-days: 30
+
+      - name: Publish release
+        if: ${{ inputs.release }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          V="${{ steps.ver.outputs.version }}"
+          gh release create "v$V" \
+            "${{ env.IPA_PATH }}#CPE5S-$V.ipa" \
+            "$RUNNER_TEMP/manifest.plist#manifest.plist" \
+            --title "v$V" \
+            --notes "版本 v$V。安装包与 OTA 清单。" \
+            --latest
