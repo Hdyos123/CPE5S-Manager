@@ -25,9 +25,21 @@ enum Changelog {
 
     static let all: [ChangelogEntry] = [
         ChangelogEntry(
-            version: "1.3.3",
+            version: "1.4.0",
             date: "2026-11-09",
             isCurrent: true,
+            sections: [
+                ("登录完全跑通", [
+                    "已在真实网关上验证：state=0 / level=2，管理员登录成功",
+                    "servernonce 使用未解码原始值参与 HMAC（base64 的 + / 被 XML 转义成 &#x2B; &#x2F;）",
+                    "token 每次仅 32 位，取到后立即使用，中间不得插入其他请求",
+                    "移除重试时的页面重载，避免会话 Cookie 被轮换导致 token 失配"
+                ], "checkmark.seal.fill", .green)
+            ]),
+        ChangelogEntry(
+            version: "1.3.3",
+            date: "2026-11-09",
+            isCurrent: false,
             sections: [
                 ("登录密码校验修复（108006 根因）", [
                     "根因：固件返回的 servernonce 中 base64 的 + 和 / 被 XML 转义为 &#x2B; 和 &#x2F;，前端直接使用原始字符串参与 HMAC 计算",

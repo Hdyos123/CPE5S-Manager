@@ -234,9 +234,9 @@ final class CPENative {
             _ = await refreshToken()
             nonce = Self.randomHex(32)
             if attempt > 0 {
-                // Re-issue the session cookie as well; the token and the
-                // cookie must belong to the same session.
-                _ = await bootstrap()
+                // Back off a little; do NOT re-fetch the page — that would
+                // rotate the session cookie away from the token.
+                try? await Task.sleep(nanoseconds: 300_000_000)
             }
             let body = "<request><username>\(user)</username>"
                 + "<firstnonce>\(nonce)</firstnonce><mode>1</mode></request>"
@@ -246,7 +246,6 @@ final class CPENative {
             cx = CPEXML(raw: resp, isError: false)
             if cx.str("salt") != nil { break }
             if cx.str("code") != "125003" { break }
-            try? await Task.sleep(nanoseconds: 350_000_000)
         }
         // NOTE: servernonce must be used verbatim — its base64 `+`/`/` arrive
         // XML-escaped (&#x2B; / &#x2F;) and the firmware hashes the RAW text.
