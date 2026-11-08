@@ -25,9 +25,21 @@ enum Changelog {
 
     static let all: [ChangelogEntry] = [
         ChangelogEntry(
-            version: "1.2.0",
+            version: "1.3.0",
             date: "2026-11-08",
             isCurrent: true,
+            sections: [
+                ("原生网络层（彻底修复 125003）", [
+                    "不再依赖 WebView 内的 fetch 完成登录与数据请求",
+                    "改用原生 URLSession，SessionID 通过 Cookie 请求头显式携带，完全绕开 WebKit 的 ITP 限制",
+                    "SCRAM-SHA256 算法用 Swift 重写（含手写 PBKDF2），已与固件算法逐字节比对一致",
+                    "WebView 仅用于获取初始会话 Cookie 与加载加密库"
+                ], "bolt.horizontal.circle.fill", .green)
+            ]),
+        ChangelogEntry(
+            version: "1.2.0",
+            date: "2026-11-08",
+            isCurrent: false,
             sections: [
                 ("125003 根因修复", [
                     "定位根因：WebKit 的 ITP 会隐藏 HttpOnly Cookie，导致 JS fetch 请求不带 SessionID，网关一律返回 125003",

@@ -20,6 +20,7 @@
 		A1000012 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000014 /* LoginView.swift */; };
 		A1000013 /* ChangelogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000015 /* ChangelogView.swift */; };
 		A1000014 /* UpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000016 /* UpdateManager.swift */; };
+		A1000015 /* CPENative.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000017 /* CPENative.swift */; };
 		A1000011 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1000011 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -39,6 +40,7 @@
 		B1000014 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		B1000015 /* ChangelogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogView.swift; sourceTree = "<group>"; };
 		B1000016 /* UpdateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateManager.swift; sourceTree = "<group>"; };
+		B1000017 /* CPENative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPENative.swift; sourceTree = "<group>"; };
 		B1000013 /* CPE5S.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CPE5S.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -103,6 +105,7 @@
 				B1000009 /* CPEModels.swift */,
 				B1000010 /* GlassTheme.swift */,
 				B1000016 /* UpdateManager.swift */,
+				B1000017 /* CPENative.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -189,6 +192,7 @@
 				A1000012 /* LoginView.swift in Sources */,
 				A1000013 /* ChangelogView.swift in Sources */,
 				A1000014 /* UpdateManager.swift in Sources */,
+				A1000015 /* CPENative.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,7 +239,7 @@
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CPE5S/Info.plist;
@@ -244,7 +248,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.panther1427.lake6241;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -261,7 +265,7 @@
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CPE5S/Info.plist;
@@ -270,7 +274,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.panther1427.lake6241;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

@@ -97,6 +97,10 @@ final class CPEBridge: NSObject, ObservableObject {
     /// In-memory password used for session re-auth; survives even when the
     /// user opted out of remembering it.
     var sessionSecret: String = ""
+    /// Gateway session cookie, mirrored from the web view's cookie store.
+    var sessionID: String = ""
+    /// Native HTTP client (used once logged in).
+    var native: CPENative?
 
     @Published var sessionReady = false
     @Published var lastError: String?
@@ -331,32 +335,26 @@ final class CPEBridge: NSObject, ObservableObject {
         guard !secret.isEmpty else {
             lastError = "请先输入密码"; return
         }
-        if !(await hasSessionCookie()) {
+        // Make sure we have the session cookie the firmware issued on GET /.
+        if sessionID.isEmpty {
+            sessionID = await sessionCookieValue()
+        }
+        if sessionID.isEmpty {
             lastError = "无法建立网关会话（Cookie 未下发），请确认手机已连接该设备"
             return
         }
-        // Attach the session cookie explicitly; WebKit's ITP can strip
-        // HttpOnly cookies from script-initiated fetches, which makes every
-        // token look expired (125003).
-        let sid = await sessionCookieValue()
-
-        guard let res = try? await runAsync(
-                Self.loginBody,
-                arguments: ["pwd": secret, "usr": user, "sid": sid]) as? [String: Any] else {
-            lastError = "登录脚本执行失败"; return
-        }
-        let ok = (res["ok"] as? Bool) ?? false
-        sessionReady = ok
-        if !ok {
-            let stage = (res["stage"] as? String) ?? ""
-            let code = (res["code"] as? String) ?? stage
-            var msg = Self.loginMessage(code.isEmpty ? stage : code)
-            if let err = res["err"] as? String, !err.isEmpty {
-                msg += " · \(err.prefix(70))"
-            }
-            lastError = msg
-        } else {
+        let client = CPENative(host: host)
+        client.sessionID = sessionID
+        let r = await client.login(user: user, password: secret)
+        sessionReady = r.ok
+        if r.ok {
             lastError = nil
+            sessionID = client.sessionID
+            native = client
+        } else {
+            var msg = Self.loginMessage(r.code ?? r.stage ?? "?")
+            if let st = r.stage, st != "auth", st != "already" { msg += " · \(st)" }
+            lastError = msg
         }
     }
 
@@ -377,15 +375,31 @@ final class CPEBridge: NSObject, ObservableObject {
 
     func call(_ path: String) async throws -> CPEXML {
         if !sessionReady { await boot() }
+
+        // Prefer the native client: no ITP sandbox, cookies are explicit.
+        if let n = native, !n.sessionID.isEmpty {
+            if let text = await n.getText(path) {
+                if text.contains("125003") {
+                    sessionReady = false
+                    await boot(force: true)
+                } else if !text.isEmpty {
+                    return CPEXML(raw: text, isError: text.contains("<error>"))
+                }
+            }
+        }
+
+        // Fallback: in-page fetch with an explicitly attached cookie.
         let js = """
           try {
-            const r = await fetch("\(path)", {credentials:"include"});
+            const r = await fetch("\(path)", {credentials:"include",
+              headers: sid ? {Cookie: "SessionID=" + sid} : {}});
             return await r.text();
           } catch (e) { return "__JSERR__" + e; }
         """
         var text = ""
         for _ in 0..<2 {
-            text = (try? await evalString(js)) ?? ""
+            text = (try? await runAsync("return await (async () => { \(js) })();",
+                                        arguments: ["sid": sessionID])) as? String ?? ""
             if text.hasPrefix("__JSERR__") || text.isEmpty {
                 try? await Task.sleep(nanoseconds: 300_000_000)
                 continue
@@ -404,6 +418,11 @@ final class CPEBridge: NSObject, ObservableObject {
     /// Fire an action endpoint, e.g. reboot.
     @discardableResult
     func action(_ path: String, body: String = "<request></request>") async -> CPEXML? {
+        if let n = native, !n.sessionID.isEmpty {
+            if let text = await n.postText(path, body: body) {
+                return CPEXML(raw: text, isError: text.contains("<error>"))
+            }
+        }
         let escaped = body
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
