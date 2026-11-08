@@ -73,6 +73,13 @@ final class CPEBridge: NSObject, ObservableObject {
     static let shared = CPEBridge()
 
     // Config — persisted so the login screen can pre-fill next time.
+    static var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+    static var appBuild: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    }
+
     static let defaultHost = "192.168.8.1"
     static let defaultUser = "admin"
 
@@ -286,6 +293,18 @@ final class CPEBridge: NSObject, ObservableObject {
         return await hasSessionCookie()
     }
 
+    /// Read the gateway session cookie value (needed because ITP may drop it
+    /// from JS fetch requests; we then attach it explicitly).
+    private func sessionCookieValue() async -> String {
+        await withCheckedContinuation { (c: CheckedContinuation<String, Never>) in
+            webView.configuration.websiteDataStore.httpCookieStore
+                .getAllCookies { cookies in
+                    let v = cookies.first { $0.name == "SessionID" }?.value ?? ""
+                    c.resume(returning: v)
+                }
+        }
+    }
+
     private func hasSessionCookie() async -> Bool {
         await withCheckedContinuation { (c: CheckedContinuation<Bool, Never>) in
             webView.configuration.websiteDataStore.httpCookieStore
@@ -316,11 +335,14 @@ final class CPEBridge: NSObject, ObservableObject {
             lastError = "无法建立网关会话（Cookie 未下发），请确认手机已连接该设备"
             return
         }
-        // Pass credentials through `arguments` — the body is wrapped in a
-        // function by callAsyncJavaScript, so string interpolation is unsafe.
+        // Attach the session cookie explicitly; WebKit's ITP can strip
+        // HttpOnly cookies from script-initiated fetches, which makes every
+        // token look expired (125003).
+        let sid = await sessionCookieValue()
+
         guard let res = try? await runAsync(
                 Self.loginBody,
-                arguments: ["pwd": secret, "usr": user, "cbName": "cpe5s"]) as? [String: Any] else {
+                arguments: ["pwd": secret, "usr": user, "sid": sid]) as? [String: Any] else {
             lastError = "登录脚本执行失败"; return
         }
         let ok = (res["ok"] as? Bool) ?? false
@@ -454,6 +476,11 @@ final class CPEBridge: NSObject, ObservableObject {
       }
       if (typeof forge === "undefined") return {ok:false, stage:"noforge"};
 
+      // Cookie header injected from native. WebKit may hide HttpOnly cookies
+      // from JS fetches, so we always send it explicitly.
+      const CK = sid ? {Cookie: "SessionID=" + sid} : {};
+      const H = (extra) => Object.assign({}, CK, extra || {});
+
       const r = (e,t,n) => forge.util.bytesToHex(forge.pbkdf2(e,t,n,32,"sha256"));
       const A = (e,t) => { const m = forge.hmac.create(); m.start("sha256", t); m.update(forge.util.hexToBytes(e)); return m.digest().toHex(); };
       const IK = e => A(e, "Client Key");
@@ -464,7 +491,7 @@ final class CPEBridge: NSObject, ObservableObject {
         return forge.util.bytesToHex(forge.util.xorBytes(p,f,p.length));
       };
       const tok = async () => {
-        const x = await fetch("/api/webserver/token", {credentials:"include"}).then(r => r.text());
+        const x = await fetch("/api/webserver/token", {credentials:"include", headers: H()}).then(r => r.text());
         const m = x.match(new RegExp("<token>([\\s\\S]*?)<\\/token>"));
         let t = m ? m[1] : "";
         t = t.replace(/&#x2F;/g,"/").replace(/&#x2B;/g,"+").replace(/&#x3D;/g,"=");
@@ -476,7 +503,8 @@ final class CPEBridge: NSObject, ObservableObject {
       };
 
       // 1) session check (no token needed)
-      const st0 = await fetch("/api/user/state-login", {credentials:"include"}).then(x => x.text());
+      const st0 = await fetch("/api/user/state-login", {credentials:"include",
+        headers: H()}).then(x => x.text());
       if (G(st0,"State") === "0") return {ok:true, already:true};
       if (G(st0,"lockstatus") && G(st0,"lockstatus") !== "0") {
         return {ok:false, stage:"locked", code:"108007", err:"剩余 " + G(st0,"remainwaittime") + " 分钟"};
@@ -487,8 +515,8 @@ final class CPEBridge: NSObject, ObservableObject {
       let t = await tok();
       const fn = forge.util.bytesToHex(forge.random.getBytesSync(32));
       let cr = await fetch("/api/user/challenge_login", {method:"POST", credentials:"include",
-        headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
-                 "__RequestVerificationToken": t},
+        headers: H({"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
+                 "__RequestVerificationToken": t}),
         body: "<request><username>" + usr + "</username><firstnonce>" + fn +
               "</firstnonce><mode>1</mode></request>"}).then(x => x.text());
 
@@ -497,8 +525,8 @@ final class CPEBridge: NSObject, ObservableObject {
         await new Promise(r => setTimeout(r, 400));
         t = await tok();
         cr = await fetch("/api/user/challenge_login", {method:"POST", credentials:"include",
-          headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
-                   "__RequestVerificationToken": t},
+          headers: H({"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
+                   "__RequestVerificationToken": t}),
           body: "<request><username>" + usr + "</username><firstnonce>" + fn +
                 "</firstnonce><mode>1</mode></request>"}).then(x => x.text());
       }
@@ -511,12 +539,13 @@ final class CPEBridge: NSObject, ObservableObject {
 
       t = await tok();
       const ar = await fetch("/api/user/authentication_login", {method:"POST", credentials:"include",
-        headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
-                 "__RequestVerificationToken": t},
+        headers: H({"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
+                 "__RequestVerificationToken": t}),
         body: "<request><clientproof>" + proof + "</clientproof><finalnonce>" + srv +
               "</finalnonce></request>"}).then(x => x.text());
 
-      const st2 = await fetch("/api/user/state-login", {credentials:"include"}).then(x => x.text());
+      const st2 = await fetch("/api/user/state-login", {credentials:"include",
+        headers: H()}).then(x => x.text());
       const ok = G(st2,"State") === "0";
       return {ok: ok, code: ok ? "" : (G(ar,"code") || "?"), level: G(st2,"userlevel")};
     } catch (e) {

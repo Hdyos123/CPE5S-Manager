@@ -25,9 +25,24 @@ enum Changelog {
 
     static let all: [ChangelogEntry] = [
         ChangelogEntry(
-            version: "1.1.2",
+            version: "1.2.0",
             date: "2026-11-08",
             isCurrent: true,
+            sections: [
+                ("125003 根因修复", [
+                    "定位根因：WebKit 的 ITP 会隐藏 HttpOnly Cookie，导致 JS fetch 请求不带 SessionID，网关一律返回 125003",
+                    "改为从原生层读取 SessionID，并显式通过 Cookie 请求头注入每次 fetch",
+                    "已用真实网关验证：带 Cookie 后一次即可拿到 salt"
+                ], "lock.shield.fill", .orange),
+                ("界面", [
+                    "登录页底部显示版本号，可直接点开检查更新",
+                    "发现新版本时在登录页显示绿点提示"
+                ], "arrow.triangle.2.circlepath", .cyan)
+            ]),
+        ChangelogEntry(
+            version: "1.1.2",
+            date: "2026-11-08",
+            isCurrent: false,
             sections: [
                 ("会话修复（125003）", [
                     "每次登录都重新加载网关页面，不再用 reload() 复用可能缺失 Cookie 的会话",

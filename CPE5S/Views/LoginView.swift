@@ -10,6 +10,7 @@ import SwiftUI
 
 struct LoginView: View {
     @EnvironmentObject var store: CPEStore
+    @EnvironmentObject var updater: UpdateManager
 
     @AppStorage("cpe.host") private var storedHost = CPEBridge.defaultHost
     @AppStorage("cpe.user") private var storedUser = CPEBridge.defaultUser
@@ -23,6 +24,7 @@ struct LoginView: View {
     @State private var busy = false
     @State private var errorText: String?
     @State private var triedAuto = false
+    @State private var showingUpdate = false
 
     private var bridge: CPEBridge { store.bridge }
 
@@ -35,10 +37,18 @@ struct LoginView: View {
                     Spacer(minLength: 46)
                     brand
                     formCard
-                    Spacer(minLength: 40)
+                    footer
+                    Spacer(minLength: 30)
                 }
                 .padding(.horizontal, 24)
             }
+        }
+        .sheet(isPresented: $showingUpdate) {
+            UpdateSheet()
+                .environmentObject(updater)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .onAppear { Task { await updater.check() } }
         }
         .onAppear {
             host = storedHost.isEmpty ? CPEBridge.defaultHost : storedHost
@@ -47,8 +57,47 @@ struct LoginView: View {
             // Warm up the hidden web view (page + session cookie + forge) while
             // the user is still typing, so tapping 登录 is instant.
             Task {
+                await updater.check(silent: true)
                 await bridge.prepare()
                 await autoLoginIfEnabled()
+            }
+        }
+    }
+
+    // MARK: Footer (version + update check)
+
+    private var footer: some View {
+        VStack(spacing: 6) {
+            Button { showingUpdate = true } label: {
+                HStack(spacing: 5) {
+                    Text("v" + CPEBridge.appVersion)
+                        .font(.system(size: 10, weight: .medium))
+                    if updater.hasUpdate {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 5, height: 5)
+                            .shadow(color: .green.opacity(0.9), radius: 3)
+                        Text("可更新")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.green)
+                    } else if updater.checking {
+                        ProgressView().scaleEffect(0.5).frame(width: 8, height: 8)
+                    }
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 8, weight: .semibold))
+                }
+                .foregroundStyle(.white.opacity(0.34))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(.white.opacity(0.06)))
+                .overlay(Capsule().strokeBorder(.white.opacity(0.10), lineWidth: 0.6))
+            }
+            .buttonStyle(.plain)
+
+            if updater.hasUpdate, let v = updater.latest?.version {
+                Text("新版本 v\(v) 已发布")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.green.opacity(0.75))
             }
         }
     }
