@@ -103,6 +103,12 @@ final class CPENative {
         let cfg = URLSessionConfiguration.ephemeral
         cfg.timeoutIntervalForRequest = 12
         cfg.timeoutIntervalForResource = 20
+        // Let URLSession manage nothing for us: no cookie jar, no automatic
+        // headers. Every request carries its own Cookie header explicitly, so
+        // there is no chance of the framework overwriting our SessionID.
+        cfg.httpCookieStorage = nil
+        cfg.httpShouldSetCookies = false
+        cfg.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         cfg.httpAdditionalHeaders = [
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                 + "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"
@@ -130,23 +136,29 @@ final class CPENative {
         do {
             let (_, resp) = try await session.data(for: req)
             guard let http = resp as? HTTPURLResponse else { return false }
-            // Capture Set-Cookie if the web view hasn't given us one yet.
-            if sessionID.isEmpty {
-                let fields = http.allHeaderFields
-                for (k, v) in fields {
-                    let line = "\(k): \(v)"
-                    if line.lowercased().contains("set-cookie"),
-                       let r = line.range(of: "SessionID=") {
-                        let rest = line[r.upperBound...]
-                        let sid = rest.prefix { $0 != ";" }
-                        sessionID = String(sid)
-                    }
-                }
+            // Always adopt the newest SessionID the gateway hands out: it must
+            // match the token we are about to request.
+            if let sid = Self.sessionID(from: http) {
+                sessionID = sid
             }
-            return true
+            return !sessionID.isEmpty
         } catch {
             return false
         }
+    }
+
+    /// Pull SessionID out of any Set-Cookie header on the response.
+    static func sessionID(from http: HTTPURLResponse) -> String? {
+        var found: String?
+        for (k, v) in http.allHeaderFields {
+            let line = "\(k): \(v)"
+            guard line.lowercased().contains("set-cookie") || k.description.lowercased() == "set-cookie" else { continue }
+            if let r = line.range(of: "SessionID=") {
+                let sid = line[r.upperBound...].prefix { $0 != ";" && $0 != " " }
+                if !sid.isEmpty { found = String(sid) }
+            }
+        }
+        return found
     }
 
     func refreshToken() async -> String {
@@ -212,21 +224,29 @@ final class CPENative {
                                    stage: "剩余 " + (x.str("remainwaittime") ?? "?") + " 分钟")
             }
         }
-        // 2) token → immediately challenge
-        _ = await refreshToken()
-        let nonce = Self.randomHex(32)
-        let chalBody = "<request><username>\(user)</username>"
-            + "<firstnonce>\(nonce)</firstnonce><mode>1</mode></request>"
-        guard var chal = await postText("/api/user/challenge_login", body: chalBody) else {
-            return LoginResult(ok: false, code: nil, stage: "network")
-        }
-        var cx = CPEXML(raw: chal, isError: false)
+        // 2) token goes stale almost immediately on this firmware: fetch a
+        //    fresh one and derive a NEW nonce for every attempt (replaying a
+        //    nonce is rejected).
+        var nonce = ""
+        var cx = CPEXML(raw: "", isError: false)
 
-        // token race → refresh and retry once
-        if cx.str("code") == "125003" {
+        for attempt in 0..<3 {
             _ = await refreshToken()
-            chal = await postText("/api/user/challenge_login", body: chalBody) ?? ""
-            cx = CPEXML(raw: chal, isError: false)
+            nonce = Self.randomHex(32)
+            if attempt > 0 {
+                // Re-issue the session cookie as well; the token and the
+                // cookie must belong to the same session.
+                _ = await bootstrap()
+            }
+            let body = "<request><username>\(user)</username>"
+                + "<firstnonce>\(nonce)</firstnonce><mode>1</mode></request>"
+            guard let resp = await postText("/api/user/challenge_login", body: body) else {
+                return LoginResult(ok: false, code: nil, stage: "network")
+            }
+            cx = CPEXML(raw: resp, isError: false)
+            if cx.str("salt") != nil { break }
+            if cx.str("code") != "125003" { break }
+            try? await Task.sleep(nanoseconds: 350_000_000)
         }
         guard let salt = cx.str("salt"),
               let iterStr = cx.str("iterations"),
