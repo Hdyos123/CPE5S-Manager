@@ -75,9 +75,10 @@ jobs:
             -destination "'generic/platform=iOS'" \
             \$SIGN \
             COMPILER_INDEX_STORE_ENABLE=NO \
-            2>&1 | tee "\$RUNNER_TEMP/build.log"
+            2>&1 | tee "\$RUNNER_TEMP/build.log" || true
+          echo "---- error summary ----"
           grep -E "error:|BUILD FAILED|ARCHIVE FAILED" "\$RUNNER_TEMP/build.log" | head -30 || true
-          test -d "\$RUNNER_TEMP/CPE5S.xcarchive"
+          grep -q "ARCHIVE SUCCEEDED" "\$RUNNER_TEMP/build.log"
 
       - name: Package IPA
         run: |
