@@ -60,25 +60,41 @@ jobs:
 
       - name: Build
         run: |
-          set -o pipefail
+          set -uo pipefail
+          LOG="$RUNNER_TEMP/build.log"
+          ARCHIVE="$RUNNER_TEMP/CPE5S.xcarchive"
+          ARGS=(
+            -project CPE5S.xcodeproj
+            -scheme CPE5S
+            -configuration Release
+            -sdk iphoneos
+            -archivePath "$ARCHIVE"
+            -destination "generic/platform=iOS"
+            COMPILER_INDEX_STORE_ENABLE=NO
+          )
           if [ "${SIGNED:-false}" = "true" ]; then
-            SIGN="CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=Apple\ Distribution PROVISIONING_PROFILE_SPECIFIER=${PROFILE_NAME} DEVELOPMENT_TEAM=${TEAM_ID}"
+            ARGS+=(
+              CODE_SIGN_STYLE=Manual
+              CODE_SIGN_IDENTITY="Apple Distribution"
+              PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME"
+              DEVELOPMENT_TEAM="$TEAM_ID"
+            )
           else
-            SIGN="CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="
+            ARGS+=(
+              CODE_SIGNING_ALLOWED=NO
+              CODE_SIGNING_REQUIRED=NO
+              CODE_SIGN_IDENTITY=
+            )
           fi
-          eval xcodebuild archive \
-            -project CPE5S.xcodeproj \
-            -scheme CPE5S \
-            -configuration Release \
-            -sdk iphoneos \
-            -archivePath "\$RUNNER_TEMP/CPE5S.xcarchive" \
-            -destination "'generic/platform=iOS'" \
-            \$SIGN \
-            COMPILER_INDEX_STORE_ENABLE=NO \
-            2>&1 | tee "\$RUNNER_TEMP/build.log" || true
+          xcodebuild archive "${ARGS[@]}" > "$LOG" 2>&1
+          RC=$?
           echo "---- error summary ----"
-          grep -E "error:|BUILD FAILED|ARCHIVE FAILED" "\$RUNNER_TEMP/build.log" | head -30 || true
-          grep -q "ARCHIVE SUCCEEDED" "\$RUNNER_TEMP/build.log"
+          grep -E "error:|BUILD FAILED|ARCHIVE FAILED" "$LOG" | head -40 || true
+          if [ $RC -ne 0 ]; then
+            echo "xcodebuild exited $RC"
+            exit $RC
+          fi
+          test -d "$ARCHIVE"
 
       - name: Package IPA
         run: |
