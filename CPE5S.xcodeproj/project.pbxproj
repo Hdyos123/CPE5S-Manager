@@ -159,8 +159,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1000012 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000014 /* LoginView.swift */; };
-		A1000011 /* Assets.xcassets in Resources */,
+				A1000011 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

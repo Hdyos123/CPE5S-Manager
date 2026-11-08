@@ -2,8 +2,6 @@ name: Build IPA
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
 
 jobs:
   build:
@@ -21,8 +19,26 @@ jobs:
           sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
 
-      - name: Show schemes
-        run: xcodebuild -list -project CPE5S.xcodeproj
+      - name: Validate project
+        run: |
+          python3 - <<'EOF'
+          s = open('CPE5S.xcodeproj/project.pbxproj').read()
+          stack = []; in_str = False; esc = False
+          for ch in s:
+              if in_str:
+                  if esc: esc = False
+                  elif ch == '\\': esc = True
+                  elif ch == '"': in_str = False
+                  continue
+              if ch == '"': in_str = True
+              elif ch in '{(': stack.append(ch)
+              elif ch in '})':
+                  want = '{' if ch == '}' else '('
+                  assert stack and stack.pop() == want, 'unbalanced'
+          assert not stack, 'unclosed'
+          print('pbxproj OK')
+          EOF
+          xcodebuild -list -project CPE5S.xcodeproj
 
       - name: Build archive
         run: |
