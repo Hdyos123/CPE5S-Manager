@@ -286,7 +286,7 @@ struct ComposeSMSView: View {
                     .disabled(phone.isEmpty || text.isEmpty || sending)
                 }
                 GlassCard(radius: 18, padding: 14) {
-                    TextField("", text: $phone, prompt: Text("收件人号码").foregroundStyle(.white.opacity(0.3)))
+                    TextField("", text: $phone, prompt: Text("收件人号码"))
                         .keyboardType(.phonePad)
                         .foregroundStyle(.white)
                 }

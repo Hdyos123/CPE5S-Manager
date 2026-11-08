@@ -38,7 +38,10 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             COMPILER_INDEX_STORE_ENABLE=NO \
-            | xcpretty || xcodebuild -version
+            2>&1 | tee "$RUNNER_TEMP/build.log"
+          echo "---- error summary ----"
+          grep -E "error:|BUILD FAILED|ARCHIVE FAILED" "$RUNNER_TEMP/build.log" | head -30 || true
+          test -d "$RUNNER_TEMP/CPE5S.xcarchive"
 
       - name: Package IPA
         run: |

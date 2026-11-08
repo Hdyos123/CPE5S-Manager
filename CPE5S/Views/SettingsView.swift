@@ -109,9 +109,9 @@ struct SettingsView: View {
                 HStack(spacing: 8) {
                     Group {
                         if showPassword {
-                            TextField("", text: $draftPassword, prompt: Text("管理密码").foregroundStyle(.white.opacity(0.3)))
+                            TextField("", text: $draftPassword, prompt: Text("管理密码"))
                         } else {
-                            SecureField("", text: $draftPassword, prompt: Text("管理密码").foregroundStyle(.white.opacity(0.3)))
+                            SecureField("", text: $draftPassword, prompt: Text("管理密码"))
                         }
                     }
                     .textInputAutocapitalization(.never)

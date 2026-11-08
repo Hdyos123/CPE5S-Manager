@@ -125,6 +125,68 @@ struct LockBandView: View {
 
     // MARK: Neighbors
 
+    private var neighborHeader: some View {
+        HStack(spacing: 0) {
+            Text("PCI").frame(width: 44, alignment: .leading)
+            Text("频段").frame(width: 60, alignment: .leading)
+            Text("RSRP").frame(maxWidth: .infinity, alignment: .trailing)
+            Text("SINR").frame(width: 48, alignment: .trailing)
+        }
+        .font(.system(size: 9, weight: .semibold))
+        .foregroundStyle(Color.white.opacity(0.35))
+    }
+
+    private func neighborRow(_ n: NeighborCell) -> some View {
+        let selected = (selectedPCI == n.pci)
+        return Button {
+            toggleSelect(n)
+        } label: {
+            HStack(spacing: 0) {
+                Text(n.pci)
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.white)
+                    .frame(width: 44, alignment: .leading)
+                Text(bandShort(n.band))
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.white.opacity(0.6))
+                    .frame(width: 60, alignment: .leading)
+                Text(n.rsrp)
+                    .font(.system(size: 11, weight: .medium))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.white.opacity(0.75))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                Text(n.sinr)
+                    .font(.system(size: 11, weight: .bold))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.cellTint(n))
+                    .frame(width: 48, alignment: .trailing)
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 8)
+            .background(rowBackground(selected: selected))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func rowBackground(selected: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(selected ? Color.cyan.opacity(0.16) : Color.clear)
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(selected ? Color.cyan.opacity(0.5) : Color.clear,
+                                  lineWidth: 0.8)
+            }
+    }
+
+    private func toggleSelect(_ n: NeighborCell) {
+        if selectedPCI == n.pci {
+            selectedPCI = nil
+        } else {
+            selectedPCI = n.pci
+            selectedBand = "auto"
+        }
+    }
+
     private var neighborCard: some View {
         GlassCard(radius: 26, padding: 18) {
             VStack(spacing: 12) {
@@ -137,48 +199,9 @@ struct LockBandView: View {
                         .foregroundStyle(.white.opacity(0.4))
                         .padding(.vertical, 20)
                 } else {
-                    // header
-                    HStack(spacing: 0) {
-                        Text("PCI").frame(width: 44, alignment: .leading)
-                        Text("频段").frame(width: 60, alignment: .leading)
-                        Text("RSRP").frame(maxWidth: .infinity, alignment: .trailing)
-                        Text("SINR").frame(width: 48, alignment: .trailing)
-                    }
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.35))
-
+                    neighborHeader
                     ForEach(neighbors) { n in
-                        Button {
-                            selectedPCI = (selectedPCI == n.pci) ? nil : n.pci
-                            if selectedPCI != nil { selectedBand = "auto" }
-                        } label: {
-                            HStack(spacing: 0) {
-                                Text(n.pci).frame(width: 44, alignment: .leading)
-                                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                                    .foregroundStyle(.white)
-                                Text(bandShort(n.band)).frame(width: 60, alignment: .leading)
-                                    .font(.system(size: 10)).foregroundStyle(.white.opacity(0.6))
-                                Text(n.rsrp).frame(maxWidth: .infinity, alignment: .trailing)
-                                    .font(.system(size: 11, weight: .medium)).monospacedDigit()
-                                    .foregroundStyle(.white.opacity(0.75))
-                                Text(n.sinr).frame(width: 48, alignment: .trailing)
-                                    .font(.system(size: 11, weight: .bold)).monospacedDigit()
-                                    .foregroundStyle(.cellTint(n))
-                            }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 8)
-                            .background {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(selectedPCI == n.pci ? Color.cyan.opacity(0.16) : .clear)
-                            }
-                            .overlay {
-                                if selectedPCI == n.pci {
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .strokeBorder(.cyan.opacity(0.5), lineWidth: 0.8)
-                                }
-                            }
-                        }
-                        .buttonStyle(.plain)
+                        neighborRow(n)
                     }
                 }
             }
