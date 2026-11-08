@@ -8,6 +8,12 @@
 import SwiftUI
 
 struct SettingsView: View {
+    static var appVersion: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return v + " (" + b + ")"
+    }
+
     @EnvironmentObject var store: CPEStore
     @AppStorage("cpe.password") private var password = ""
     @AppStorage("cpe.refresh") private var refreshInterval: Double = 1.0
@@ -15,6 +21,7 @@ struct SettingsView: View {
     @State private var showPassword = false
     @State private var reconnecting = false
     @State private var message: String?
+    @State private var showingChangelog = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -30,6 +37,11 @@ struct SettingsView: View {
             .padding(.top, 8)
         }
         .onAppear { draftPassword = password }
+        .sheet(isPresented: $showingChangelog) {
+            ChangelogView()
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
         .alert("提示", isPresented: Binding(
             get: { message != nil }, set: { if !$0 { message = nil } })) {
             Button("好") { message = nil }
@@ -273,9 +285,20 @@ struct SettingsView: View {
                             .foregroundStyle(.white.opacity(0.45))
                     }
                     Spacer()
-                    Text("v1.0.0")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.35))
+                    Button { showingChangelog = true } label: {
+                        HStack(spacing: 3) {
+                            Text("v" + Self.appVersion)
+                                .font(.system(size: 10, weight: .semibold))
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 9, weight: .semibold))
+                        }
+                        .foregroundStyle(.white.opacity(0.42))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(.white.opacity(0.07)))
+                        .overlay(Capsule().strokeBorder(.white.opacity(0.14), lineWidth: 0.6))
+                    }
+                    .buttonStyle(.plain)
                 }
                 Divider().overlay(Color.white.opacity(0.1))
                 HStack {
