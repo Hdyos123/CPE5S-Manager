@@ -34,7 +34,7 @@ jobs:
           xcodebuild -list -project CPE5S.xcodeproj
 
       - name: Setup signing
-        if: ${{ secrets.BUILD_CERT_P12_BASE64 != '' }}
+        if: ${{ env.CERT_B64 != '' }}
         env:
           CERT_B64: ${{ secrets.BUILD_CERT_P12_BASE64 }}
           CERT_PASS: ${{ secrets.BUILD_CERT_PASSWORD }}
