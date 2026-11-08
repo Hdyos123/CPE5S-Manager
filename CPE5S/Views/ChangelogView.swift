@@ -25,9 +25,20 @@ enum Changelog {
 
     static let all: [ChangelogEntry] = [
         ChangelogEntry(
+            version: "1.3.3",
+            date: "2026-11-09",
+            isCurrent: true,
+            sections: [
+                ("登录密码校验修复（108006 根因）", [
+                    "根因：固件返回的 servernonce 中 base64 的 + 和 / 被 XML 转义为 &#x2B; 和 &#x2F;，前端直接使用原始字符串参与 HMAC 计算",
+                    "此前 App 会把实体解码后再计算，导致 proof 与网关不一致，永远返回密码错误",
+                    "改为使用未解码的原始值，已与浏览器算出的 proof 逐字节比对完全一致"
+                ], "key.horizontal.fill", .green)
+            ]),
+        ChangelogEntry(
             version: "1.3.0",
             date: "2026-11-08",
-            isCurrent: true,
+            isCurrent: false,
             sections: [
                 ("原生网络层（彻底修复 125003）", [
                     "不再依赖 WebView 内的 fetch 完成登录与数据请求",

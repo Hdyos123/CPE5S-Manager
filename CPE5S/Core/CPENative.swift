@@ -248,9 +248,11 @@ final class CPENative {
             if cx.str("code") != "125003" { break }
             try? await Task.sleep(nanoseconds: 350_000_000)
         }
+        // NOTE: servernonce must be used verbatim — its base64 `+`/`/` arrive
+        // XML-escaped (&#x2B; / &#x2F;) and the firmware hashes the RAW text.
         guard let salt = cx.str("salt"),
               let iterStr = cx.str("iterations"),
-              let srv = cx.str("servernonce") else {
+              let srv = cx.rawStr("servernonce") else {
             return LoginResult(ok: false, code: cx.str("code"), stage: "challenge")
         }
         let iters = Int(iterStr) ?? 1000

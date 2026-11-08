@@ -17,6 +17,16 @@ struct CPEXML {
     let raw: String
     let isError: Bool
 
+    /// Extract <tag>value</tag> WITHOUT XML entity decoding.
+    /// Needed for values that participate in crypto (e.g. servernonce, whose
+    /// base64 `+` and `/` arrive as `&#x2B;` / `&#x2F;` and must stay as-is).
+    func rawStr(_ key: String) -> String? {
+        guard let range = raw.range(of: "<\(key)>") else { return nil }
+        let rest = raw[range.upperBound...]
+        guard let end = rest.range(of: "</\(key)>") else { return nil }
+        return String(rest[..<end.lowerBound])
+    }
+
     /// Extract <tag>value</tag> from the response body.
     func str(_ key: String) -> String? {
         guard let range = raw.range(of: "<\(key)>") else { return nil }
