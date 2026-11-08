@@ -72,14 +72,101 @@ final class CPEBridge: NSObject, ObservableObject {
 
     static let shared = CPEBridge()
 
-    // Config
-    let host = "192.168.8.1"
+    // Config — persisted so the login screen can pre-fill next time.
+    static let defaultHost = "192.168.8.1"
+    static let defaultUser = "admin"
+
+    var host: String {
+        get { UserDefaults.standard.string(forKey: "cpe.host") ?? Self.defaultHost }
+        set { UserDefaults.standard.set(newValue, forKey: "cpe.host") }
+    }
+    var user: String {
+        get { UserDefaults.standard.string(forKey: "cpe.user") ?? Self.defaultUser }
+        set { UserDefaults.standard.set(newValue, forKey: "cpe.user") }
+    }
     var baseURL: String { "http://\(host)" }
     @AppStorage("cpe.password") var password: String = ""
 
     @Published var sessionReady = false
     @Published var lastError: String?
     @Published var isLoggingIn = false
+
+    // MARK: Login state (drives the login gate)
+
+    @Published var isLoggedIn = false
+
+    /// Whether a password is stored and auto-login is enabled.
+    var autoLoginEnabled: Bool {
+        UserDefaults.standard.object(forKey: "cpe.autoLogin") == nil
+            ? true
+            : UserDefaults.standard.bool(forKey: "cpe.autoLogin")
+    }
+
+    var rememberPassword: Bool {
+        UserDefaults.standard.object(forKey: "cpe.remember") == nil
+            ? true
+            : UserDefaults.standard.bool(forKey: "cpe.remember")
+    }
+
+    /// Sign in with explicit credentials from the login screen.
+    @discardableResult
+    func signIn(host: String, user: String, password: String,
+                remember: Bool, autoLogin: Bool) async -> Bool {
+        self.host = host.trimmingCharacters(in: .whitespaces)
+        self.user = user.trimmingCharacters(in: .whitespaces)
+        self.password = remember ? password : ""
+        UserDefaults.standard.set(remember, forKey: "cpe.remember")
+        UserDefaults.standard.set(autoLogin, forKey: "cpe.autoLogin")
+        sessionReady = false
+        lastError = nil
+        // Force a fresh page load for the (possibly new) host before logging in.
+        await boot(force: true)
+        isLoggedIn = sessionReady
+        return sessionReady
+    }
+
+    func signOut() {
+        isLoggedIn = false
+        sessionReady = false
+        lastError = nil
+        webView.load(URLRequest(url: URL(string: "about:blank")!))
+    }
+
+    // MARK: User-Agent
+
+    /// Desktop UA — the full PC web UI (all menus / fields) is served to this.
+    static let desktopUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        + "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"
+
+    /// Mobile UA — the small handset layout.
+    static let mobileUA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) "
+        + "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1"
+
+    static var osVersion: String {
+        ProcessInfo.processInfo.operatingSystemVersionString
+            .replacingOccurrences(of: "Version ", with: "")
+            .components(separatedBy: " ").first ?? "17.0"
+    }
+
+    /// Current UA mode (persisted).
+    var isDesktopUA: Bool {
+        UserDefaults.standard.object(forKey: "cpe.desktopUA") == nil
+            ? true
+            : UserDefaults.standard.bool(forKey: "cpe.desktopUA")
+    }
+
+    /// Swap the UA and reload; the session cookie survives.
+    func setUserAgent(desktop: Bool) async {
+        webView.customUserAgent = desktop ? Self.desktopUA : Self.mobileUA
+        UserDefaults.standard.set(desktop, forKey: "cpe.desktopUA")
+        objectWillChange.send()
+        await boot(force: true)
+    }
+
+    /// Ask the page what it sees — handy for debugging which layout is served.
+    func debugUserAgent() async -> String {
+        (try? await evalString("navigator.userAgent")) ?? "-"
+    }
 
     private var webView: WKWebView!
     private var bootContinuation: CheckedContinuation<Void, Never>?
@@ -89,8 +176,14 @@ final class CPEBridge: NSObject, ObservableObject {
         let cfg = WKWebViewConfiguration()
         cfg.websiteDataStore = .default()
         cfg.allowsInlineMediaPlayback = true
+        // Safari-like UA so the firmware's Vue app renders the same code paths
+        // it serves to a real browser (a bare WKWebView UA gets a reduced page).
+        cfg.applicationNameForUserAgent = "Version/\(CPEBridge.osVersion) Mobile/15E148 Safari/604.1"
         let wv = WKWebView(frame: CGRect(x: 0, y: 0, width: 1, height: 1), configuration: cfg)
         wv.isHidden = true
+        wv.customUserAgent = UserDefaults.standard.object(forKey: "cpe.desktopUA") == nil
+            ? CPEBridge.desktopUA
+            : (UserDefaults.standard.bool(forKey: "cpe.desktopUA") ? CPEBridge.desktopUA : CPEBridge.mobileUA)
         wv.navigationDelegate = self
         webView = wv
     }
@@ -140,7 +233,7 @@ final class CPEBridge: NSObject, ObservableObject {
         guard !password.isEmpty else {
             lastError = "未设置登录密码"; return
         }
-        let js = Self.loginJS(password: password, user: "admin")
+        let js = Self.loginJS(password: password, user: user)
         guard let res = try? await evalDict(js) else {
             lastError = "登录脚本执行失败"; return
         }

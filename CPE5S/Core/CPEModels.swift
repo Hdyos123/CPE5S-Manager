@@ -117,6 +117,7 @@ final class CPEStore: ObservableObject {
     @Published var sms: [CPESms] = []
     @Published var smsUnread = 0
     @Published var connected = false
+    @Published var isLoggedIn = false
     @Published var lastUpdate = Date()
     @Published var busy = false
 

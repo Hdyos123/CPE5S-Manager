@@ -21,6 +21,7 @@ struct SettingsView: View {
             VStack(spacing: 14) {
                 sessionCard
                 passwordCard
+                uaCard
                 refreshCard
                 aboutCard
                 Spacer(minLength: 90)
@@ -159,6 +160,49 @@ struct SettingsView: View {
                 Text("密码仅保存在本机 Keychain 之外的应用偏好中，不会上传。")
                     .font(.system(size: 9))
                     .foregroundStyle(.white.opacity(0.3))
+            }
+        }
+    }
+
+    // MARK: Refresh
+
+    private var uaCard: some View {
+        GlassCard(radius: 26, padding: 18) {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(title: "浏览器标识", subtitle: "User-Agent", systemImage: "safari")
+                Text("小程序按 UA 返回不同界面。电脑版字段更全（含邻区、MCS、RANK、CQI）。")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.white.opacity(0.32))
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    ForEach([(true, "电脑版"), (false, "移动版")], id: \.0) { item in
+                        let active = store.bridge.isDesktopUA == item.0
+                        Button {
+                            Task { await store.bridge.setUserAgent(desktop: item.0) }
+                        } label: {
+                            VStack(spacing: 3) {
+                                Text(item.1)
+                                    .font(.system(size: 12, weight: .semibold))
+                                Text(item.0 ? "PC WebUI" : "手机布局")
+                                    .font(.system(size: 8))
+                                    .foregroundStyle(.white.opacity(0.35))
+                            }
+                            .foregroundStyle(active ? Color.white : Color.white.opacity(0.5))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 9)
+                            .background {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(active ? Color.cyan.opacity(0.22) : Color.white.opacity(0.05))
+                            }
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(active ? Color.cyan.opacity(0.55) : Color.white.opacity(0.1),
+                                                  lineWidth: 0.8)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
         }
     }

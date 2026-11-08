@@ -17,8 +17,7 @@ struct CPE5SApp: App {
                 .environmentObject(store)
                 .preferredColorScheme(.dark)
                 .onAppear {
-                    store.start(interval: refreshInterval)
-                    Task { await store.bridge.boot(); await store.refreshAll() }
+                    // LoginView drives sign-in (auto or manual); polling starts after it succeeds.
                 }
         }
     }
@@ -32,6 +31,29 @@ struct RootView: View {
         ZStack {
             AuroraBackground()
 
+            if store.isLoggedIn {
+                MainTabs(tab: $tab)
+                    .transition(.asymmetric(insertion: .opacity.combined(with: .scale(scale: 1.02)),
+                                            removal: .opacity))
+            } else {
+                LoginView()
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.32), value: store.isLoggedIn)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onAppear { BridgeHost.attach(bridge: store.bridge) }
+    }
+}
+
+// MARK: - Main tabs
+
+struct MainTabs: View {
+    @EnvironmentObject var store: CPEStore
+    @Binding var tab: Int
+
+    var body: some View {
+        ZStack {
             Group {
                 switch tab {
                 case 0: HomeView()
@@ -51,8 +73,6 @@ struct RootView: View {
                     .padding(.bottom, 6)
             }
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        .onAppear { BridgeHost.attach(bridge: store.bridge) }
     }
 }
 
