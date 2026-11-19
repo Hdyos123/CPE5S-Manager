@@ -1,0 +1,301 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0000000000000000000000C8 /* ControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000064 /* ControlView.swift */; };
+		0000000000000000000000C9 /* CpeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000065 /* CpeBridge.swift */; };
+		0000000000000000000000CA /* CpeClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000066 /* CpeClient.swift */; };
+		0000000000000000000000CB /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000067 /* HomeView.swift */; };
+		0000000000000000000000CC /* LockBandView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000068 /* LockBandView.swift */; };
+		0000000000000000000000CD /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000069 /* Models.swift */; };
+		0000000000000000000000CE /* OPPOCPEApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006A /* OPPOCPEApp.swift */; };
+		0000000000000000000000CF /* ParamsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006B /* ParamsView.swift */; };
+		0000000000000000000000D0 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006C /* RootView.swift */; };
+		0000000000000000000000D1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006D /* SettingsView.swift */; };
+		0000000000000000000000D2 /* SmsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006E /* SmsView.swift */; };
+		0000000000000000000000D3 /* SpeedTrendChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006F /* SpeedTrendChart.swift */; };
+		0000000000000000000000D4 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000070 /* Theme.swift */; };
+		00000000000000000000012E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000012C /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		000000000000000000000005 /* OPPOCPE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OPPOCPE.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000064 /* ControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlView.swift; sourceTree = "<group>"; };
+		000000000000000000000065 /* CpeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CpeBridge.swift; sourceTree = "<group>"; };
+		000000000000000000000066 /* CpeClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CpeClient.swift; sourceTree = "<group>"; };
+		000000000000000000000067 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		000000000000000000000068 /* LockBandView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockBandView.swift; sourceTree = "<group>"; };
+		000000000000000000000069 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		00000000000000000000006A /* OPPOCPEApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OPPOCPEApp.swift; sourceTree = "<group>"; };
+		00000000000000000000006B /* ParamsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParamsView.swift; sourceTree = "<group>"; };
+		00000000000000000000006C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		00000000000000000000006D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		00000000000000000000006E /* SmsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmsView.swift; sourceTree = "<group>"; };
+		00000000000000000000006F /* SpeedTrendChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedTrendChart.swift; sourceTree = "<group>"; };
+		000000000000000000000070 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		00000000000000000000012C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		00000000000000000000012D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		000000000000000000000007 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		000000000000000000000002 = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000006 /* OPPOCPE */,
+				000000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		000000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000005 /* OPPOCPE.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		000000000000000000000006 /* OPPOCPE */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000064 /* ControlView.swift */,
+				000000000000000000000065 /* CpeBridge.swift */,
+				000000000000000000000066 /* CpeClient.swift */,
+				000000000000000000000067 /* HomeView.swift */,
+				000000000000000000000068 /* LockBandView.swift */,
+				000000000000000000000069 /* Models.swift */,
+				00000000000000000000006A /* OPPOCPEApp.swift */,
+				00000000000000000000006B /* ParamsView.swift */,
+				00000000000000000000006C /* RootView.swift */,
+				00000000000000000000006D /* SettingsView.swift */,
+				00000000000000000000006E /* SmsView.swift */,
+				00000000000000000000006F /* SpeedTrendChart.swift */,
+				000000000000000000000070 /* Theme.swift */,
+				00000000000000000000012C /* Assets.xcassets */,
+				00000000000000000000012D /* Info.plist */,
+			);
+			path = OPPOCPE;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		000000000000000000000004 /* OPPOCPE */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 00000000000000000000000B /* Build configuration list for PBXNativeTarget "OPPOCPE" */;
+			buildPhases = (
+				000000000000000000000008 /* Sources */,
+				000000000000000000000007 /* Frameworks */,
+				000000000000000000000009 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OPPOCPE;
+			productName = OPPOCPE;
+			productReference = 000000000000000000000005 /* OPPOCPE.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		000000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					000000000000000000000004 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = 00000000000000000000000A /* Build configuration list for PBXProject "OPPOCPE" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = zh_CN;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				zh_CN,
+				Base,
+			);
+			mainGroup = 000000000000000000000002;
+			productRefGroup = 000000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				000000000000000000000004 /* OPPOCPE */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		000000000000000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				00000000000000000000012E /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		000000000000000000000008 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0000000000000000000000C8 /* ControlView.swift in Sources */,
+				0000000000000000000000C9 /* CpeBridge.swift in Sources */,
+				0000000000000000000000CA /* CpeClient.swift in Sources */,
+				0000000000000000000000CB /* HomeView.swift in Sources */,
+				0000000000000000000000CC /* LockBandView.swift in Sources */,
+				0000000000000000000000CD /* Models.swift in Sources */,
+				0000000000000000000000CE /* OPPOCPEApp.swift in Sources */,
+				0000000000000000000000CF /* ParamsView.swift in Sources */,
+				0000000000000000000000D0 /* RootView.swift in Sources */,
+				0000000000000000000000D1 /* SettingsView.swift in Sources */,
+				0000000000000000000000D2 /* SmsView.swift in Sources */,
+				0000000000000000000000D3 /* SpeedTrendChart.swift in Sources */,
+				0000000000000000000000D4 /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		00000000000000000000000C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		00000000000000000000000D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		00000000000000000000000E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = OPPOCPE/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.oppocpe.manager;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		00000000000000000000000F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = OPPOCPE/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.oppocpe.manager;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		00000000000000000000000A /* Build configuration list for PBXProject "OPPOCPE" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				00000000000000000000000C /* Debug */,
+				00000000000000000000000D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		00000000000000000000000B /* Build configuration list for PBXNativeTarget "OPPOCPE" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				00000000000000000000000E /* Debug */,
+				00000000000000000000000F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 000000000000000000000001 /* Project object */;
+}
