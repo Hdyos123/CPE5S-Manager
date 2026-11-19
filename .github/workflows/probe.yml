@@ -1,0 +1,17 @@
+name: OPPO Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  test-runner:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Hello
+        run: |
+          echo "runner ok"
+          sw_vers
+          xcodebuild -version
