@@ -17,28 +17,7 @@ jobs:
       - name: Validate project
         working-directory: OPPOCPE
         run: |
-          python3 - <<'PY'
-import re, sys
-s = open('OPPOCPE.xcodeproj/project.pbxproj').read()
-depth = 0; instr = False; esc = False
-for c in s:
-    if instr:
-        if esc: esc = False
-        elif c == '\\': esc = True
-        elif c == '"': instr = False
-        continue
-    if c == '"': instr = True
-    elif c in '({': depth += 1
-    elif c in ')}': depth -= 1
-    if depth < 0:
-        sys.exit('unbalanced parens')
-if depth != 0:
-    sys.exit('unbalanced (final depth %d)' % depth)
-ids = re.findall(r'^\t\t([0-9A-F]{24}) ', s, re.M)
-if len(ids) != len(set(ids)):
-    sys.exit('duplicate ids')
-print('pbxproj OK')
-PY
+          python3 validate_pbxproj.py OPPOCPE.xcodeproj/project.pbxproj
           xcodebuild -list -project OPPOCPE.xcodeproj
 
       - name: Build archive
