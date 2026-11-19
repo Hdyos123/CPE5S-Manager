@@ -3,8 +3,6 @@ name: Build OPPO CPE IPA
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'OPPOCPE/**'
   workflow_dispatch:
 
 jobs:
